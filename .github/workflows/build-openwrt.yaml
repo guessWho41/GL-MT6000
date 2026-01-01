@@ -155,7 +155,7 @@ jobs:
           - **UPnP**
           - **Wireguard VPN**
           - **ZRAM**
-          - **REMOVED:** dropbear, odhcpd and ppp" --title "OpenWrt Custom Release for Flint 2 (${{ needs.check_commits.outputs.release_prefix }}-${RELEASE_DATE})" ./release/*
+          - **Removed:** dropbear, odhcpd and ppp" --title "OpenWrt Custom Release for Flint 2 (${{ needs.check_commits.outputs.release_prefix }}-${RELEASE_DATE})" ./release/*
 
       - name: Clean up old releases
         run: |
