@@ -1,4 +1,4 @@
-movename: Build OpenWrt for GL-MT6000 self-hosted
+name: Build OpenWrt for GL-MT6000 self-hosted
 
 permissions:
   contents: write
