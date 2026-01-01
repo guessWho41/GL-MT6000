@@ -1,4 +1,4 @@
-name: Build OpenWrt for GL-MT6000 self-hosted
+movename: Build OpenWrt for GL-MT6000 self-hosted
 
 permissions:
   contents: write
@@ -140,7 +140,7 @@ jobs:
           - **UPnP**
           - **Wireguard VPN**
           - **ZRAM**
-          - **REMOVED:** dropbear, odhcpd and ppp" --title "OpenWrt Custom Release for Flint 2 (${{ needs.check_commits.outputs.release_prefix }}-${RELEASE_DATE})" ./release/*
+          - **Remvoed:** dropbear, odhcpd and ppp" --title "OpenWrt Custom Release for Flint 2 (${{ needs.check_commits.outputs.release_prefix }}-${RELEASE_DATE})" ./release/*
 
       - name: Clean up old releases
         run: |
