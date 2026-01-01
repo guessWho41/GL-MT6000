@@ -1,6 +1,6 @@
-GL.iNET - MT 6000 custom build with LuCi.
+GL.iNET Flint 2 (GL-MT6000) custom build with LuCi.
 
-Fork of pesa1234's GL.iNET - MT 6000 custom build https://github.com/pesa1234/MT6000_cust_build with customizations:
+Repository for building pesa1234's GL.iNET - MT 6000 custom build https://github.com/pesa1234/MT6000_cust_build with following customizations:
 
 - Mbed TLS relaced with OpenSSL
 - WiFi UCODE scripts
@@ -15,4 +15,4 @@ Fork of pesa1234's GL.iNET - MT 6000 custom build https://github.com/pesa1234/MT
 - UPnP
 - Wireguard
 - ZRAM
-- REMOVED: dropbear, odhcpd and ppp
+- Removed: dropbear, odhcpd and ppp
