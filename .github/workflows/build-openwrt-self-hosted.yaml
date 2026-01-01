@@ -1,0 +1,149 @@
+name: Build OpenWrt for GL-MT6000 self-hosted
+
+permissions:
+  contents: write
+  actions: write
+
+on:
+  workflow_dispatch:
+  # push:
+    # branches:
+      # - main
+  #schedule:
+    #- cron: "38 1 * * *"
+
+env:
+  REMOTE_REPOSITORY: pesa1234/openwrt
+  CONFIG_FILE: .config
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  check_commits:
+    name: Check for new commits
+    runs-on: self-hosted
+    outputs:
+      remote_branch: ${{ steps.check_commits.outputs.remote_branch }}
+      release_prefix: ${{ steps.check_commits.outputs.release_prefix }}
+      new_commits: ${{ steps.check_commits.outputs.new_commits }}
+      latest_commit_sha: ${{ steps.check_commits.outputs.latest_commit_sha }}
+    steps:
+      - name: Check for new commits in pesa1234 repo
+        id: check_commits
+        run: |
+          remote_branch=$(git ls-remote https://github.com/${{ env.REMOTE_REPOSITORY }}.git "refs/heads/next-*" | sed -e 's|\(.*heads/\)||' | grep -viE 'test|beta' | sort -V | tail -n1)
+          [ -n "$remote_branch" ] && latest_commit_sha=$(gh api "repos/${{ env.REMOTE_REPOSITORY }}/commits/${remote_branch}" --jq .sha)
+          [ -z "$latest_commit_sha" ] && { echo "*** COULD NOT GET latest_commit_sha FROM remote_branch=$remote_branch ***" ; exit 1; }
+          gh api "repos/${{ github.repository }}/releases/latest" --jq .body 2>/dev/null | grep -q "${latest_commit_sha}" && echo "new_commits=false" >> $GITHUB_OUTPUT || echo "new_commits=true" >> $GITHUB_OUTPUT
+          echo "remote_branch=${remote_branch}"
+          echo "release_prefix=${remote_branch%.rss*}"
+          echo "latest_commit_sha=$latest_commit_sha"
+          echo "remote_branch=${remote_branch}" >> $GITHUB_OUTPUT
+          echo "release_prefix=${remote_branch%.rss*}" >> $GITHUB_OUTPUT
+          echo "latest_commit_sha=$latest_commit_sha" >> $GITHUB_OUTPUT
+
+  build:
+    name: Build OpenWrt
+    needs: check_commits
+    if: github.event_name == 'workflow_dispatch' || needs.check_commits.outputs.new_commits == 'true'
+    runs-on: self-hosted
+    steps:
+      - name: Checkout remote repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.REMOTE_REPOSITORY }}
+          ref: ${{ needs.check_commits.outputs.remote_branch }}
+          fetch-depth: 0
+
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          path: "builder_repo"
+
+      - name: Update and install feeds
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          # run again because sometimes it misses some dependencies
+          ./scripts/feeds install -a
+
+      - name: Setup configuration and custom files
+        run: |
+          mv -v builder_repo/files ./
+          mv -v builder_repo/${{ env.CONFIG_FILE }} .config
+          make defconfig
+
+      - name: Build firmware
+        run: |
+          make download -j$(nproc) || {
+            echo "Retrying..."
+            sleep 30
+            make download -j1 V=s
+          }
+          make -j$(nproc) || {
+            echo "Retrying..."
+            sleep 30
+            make -j1 V=s
+          }
+          # BUILD_DIR=$(find ./bin -maxdepth 1 -mindepth 1 -type d)
+          # DEST=./firmware
+          # NAME=$(basename "$BUILD_DIR")
+          # mkdir -p "$DEST/$NAME"
+          # find "$BUILD_DIR" -mindepth 1 -maxdepth 1 ! -name packages -exec mv -t "$DEST/$NAME" {} +
+          mkdir -p ./release
+          find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} ./release/ \; ||:
+          mv .config release/full.config ||:
+          cd ./release && find -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \; ||:
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: gl-mt6000-firmware
+          path: |
+            ./release/*
+
+      - name: Push build to repo
+        run: |
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
+          cd ./bin
+          git init
+          git remote add origin git@github.com:guessWho41/MT6000_cust_build.git
+          git fetch origin main
+          git checkout -B main origin/main
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Add firmware build $(date +'%Y-%m-%d %H:%M:%S')"
+          git push origin main
+
+      - name: Create release
+        run: |
+          RELEASE_DATE=$(date +%F)
+          gh release delete "${{ needs.check_commits.outputs.release_prefix }}-${RELEASE_DATE}" --cleanup-tag -y --repo "${{ github.repository }}" ||:
+          gh release create "${{ needs.check_commits.outputs.release_prefix }}-${RELEASE_DATE}" --repo "${{ github.repository }}" --latest --notes "### 🔄 Main Repository
+          - **Repository:** [${{ env.REMOTE_REPOSITORY }}](https://github.com/${{ env.REMOTE_REPOSITORY }})
+          - **Branch:** ${{ needs.check_commits.outputs.remote_branch }}
+          - **Commit:** ${{ needs.check_commits.outputs.latest_commit_sha }}
+          
+          ### 📝 Build Information
+          - **Target:** [Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
+          - **Configuration:** [${{ env.CONFIG_FILE }}](${{ env.CONFIG_FILE }})
+          - **Mbed TLS relaced with OpenSSL**
+          - **WiFi UCODE scripts**
+          - **Ad Block Fast**
+          - **Bridger**
+          - **DDNS**
+          - **DNS Crypt Proxy**
+          - **MWAN3**
+          - **OpenSSH and SFTP with hardened config**
+          - **SQM**
+          - **TCP BBR**
+          - **UPnP**
+          - **Wireguard VPN**
+          - **ZRAM**
+          - **REMOVED:** dropbear, odhcpd and ppp" --title "OpenWrt Custom Release for Flint 2 (${{ needs.check_commits.outputs.release_prefix }}-${RELEASE_DATE})" ./release/*
+
+      - name: Clean up old releases
+        run: |
+          gh api repos/${{ github.repository }}/releases --paginate --jq '.[10:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
+            gh api -X DELETE "repos/${{ github.repository }}/releases/$id" && gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/$tag" 2>/dev/null ||:
+          done
