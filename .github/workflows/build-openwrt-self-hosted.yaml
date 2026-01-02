@@ -106,7 +106,7 @@ jobs:
           export GIT_SSH_COMMAND="ssh -i ~/.ssh/github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
           cd ./bin
           git init
-          git remote add origin git@github.com:guessWho41/MT6000_cust_build.git
+          git remote add origin git@github.com:guessWho41/MT6000.git
           git fetch origin main
           git checkout -B main origin/main
           git config user.name "github-actions"
