@@ -79,7 +79,7 @@ jobs:
             sleep 30
             make download -j1 V=s
           }
-          make -j$(nproc) || {
+          make -j$(nproc) V=s || {
             echo "Retrying..."
             sleep 30
             make -j1 V=s
