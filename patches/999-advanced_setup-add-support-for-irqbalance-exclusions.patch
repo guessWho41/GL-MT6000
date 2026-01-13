@@ -1,0 +1,206 @@
+--- a/target/linux/mediatek/filogic/base-files/etc/init.d/advanced_setup
++++ b/target/linux/mediatek/filogic/base-files/etc/init.d/advanced_setup
+@@ -1,19 +1,18 @@
+ #!/bin/sh /etc/rc.common
+ 
+ START=99
++STOP=10
+ USE_PROCD=1
+ 
+ . /lib/functions.sh
+ 
+ 
+-smp-mt76() {
++smp_mt76() {
+ OPTIMIZED_FOR="$1"
+ CPU_LIST=`cat /proc/interrupts | sed -n '1p'`
+ NUM_OF_CPU=0; for i in $CPU_LIST; do NUM_OF_CPU=`expr $NUM_OF_CPU + 1`; done;
+ DEFAULT_RPS=0
+ 
+-. /lib/functions.sh
+-
+ RPS_IF_LIST=""
+ NUM_WIFI_CARD=0
+ WIFI_RADIO1=0
+@@ -44,7 +43,7 @@
+ 	for v in $VIRTUAL_RADIO_LIST;
+ 	do
+ 		NUM_WIFI_CARD=`expr $NUM_WIFI_CARD + 1`
+-		logger -s "smp_affinity: physical raido $v"
++		logger -s "smp_affinity: physical radio $v"
+ 		if [[ $v == *"wmac"* ]]; then
+ 			WIFI_RADIO1=1
+ 		fi
+@@ -274,7 +273,7 @@
+ 	logger -s "smp_affinity: CPU3_AFFINITY = $CPU3_AFFINITY"
+ }
+ 
+-gl-mt6000()
++gl_mt6000()
+ {
+ 	num_of_wifi=$1
+ 	DEFAULT_RPS=0
+@@ -451,7 +450,7 @@
+ 	logger -s "smp_affinity: CPU1_AFFINITY = $CPU1_AFFINITY"
+ }
+ 
+-gl-mt3000()
++gl_mt3000()
+ {
+ 	num_of_wifi=$1
+ 	DEFAULT_RPS=0
+@@ -556,13 +555,13 @@
+ 		MT7986 $num_of_wifi
+ 	elif [[ $board == *"gl-mt6000"* ]]; then
+ 		logger -s "smp_affinity: setup_model: gl-mt6000 NUM_WIFI_CARD=$num_of_wifi"
+-		gl-mt6000 $num_of_wifi
++		gl_mt6000 $num_of_wifi
+ 	elif [[ $board == *"7981"* ]]; then
+ 		logger -s "smp_affinity: setup_model: MT7981 NUM_WIFI_CARD=$num_of_wifi"
+ 		MT7981 $num_of_wifi
+ 	elif [[ $board == *"gl-mt3000"* ]]; then
+ 		logger -s "smp_affinity: setup_model: gl-mt3000 NUM_WIFI_CARD=$num_of_wifi"
+-		gl-mt3000 $num_of_wifi
++		gl_mt3000 $num_of_wifi
+ 	elif [[ $board == *"7622"* ]]; then
+ 		logger -s "smp_affinity: setup_model: MT7622 NUM_WIFI_CARD=$num_of_wifi"
+ 		MT7622 $num_of_wifi
+@@ -638,6 +637,12 @@
+ {
+ 	logger -s "smp_affinity: # Setup affinity of each physical irq."
+ 	num=0
++	irqbalance_enabled=$(uci get irqbalance.@irqbalance[0].enabled 2>/dev/null)
++	if [ "$irqbalance_enabled" == 1 ]; then
++		irqbalance_excluded_irqs=$(uci get irqbalance.@irqbalance[0].banirq 2>/dev/null)
++		logger -s "smp_affinity: irqbalance is enabled"
++		irqbalance_settings_modified=0
++	fi
+ 	while [ "$num" -lt "$NUM_OF_CPU" ];do
+ 		eval smp_list=\$CPU${num}_AFFINITY
+ 		for i in $smp_list; do
+@@ -648,10 +653,26 @@
+ 			if [ ! -z $virq ]; then
+ 				#logger -s "smp_affinity: echo $cpu_bit > /proc/irq/$virq/smp_affinity"
+ 				echo $cpu_bit > /proc/irq/$virq/smp_affinity
++				if [ "$irqbalance_enabled" == 1 ]; then
++					case " $irqbalance_excluded_irqs " in
++						*" $virq "*) logger -s "smp_affinity: irq $virq already excluded from irqbalance" ;;
++						*)
++							logger -s "smp_affinity: adding irq $virq to irqbalance exclusions"
++							uci add_list irqbalance.@irqbalance[0].banirq="$virq"
++							echo $virq >> /tmp/smp_affinity_irqs
++							irqbalance_settings_modified=1
++							;;
++					esac
++				fi
+ 			fi
+ 		done
+ 		num=`expr $num + 1`
+ 	done
++	if [ "$irqbalance_settings_modified" == 1 ]; then
++		logger -s "smp_affinity: applying irqbalance changes"
++		uci commit irqbalance
++		/etc/init.d/irqbalance restart
++	fi
+ }
+ 
+ 
+@@ -680,7 +701,7 @@
+ #end of file
+ }
+ 
+-mtk-offloading()
++mtk_offloading()
+ {
+ 	mtk_offloading_enable=$(uci get advanced.@defaults[0].mtk_offloading_enable 2>/dev/null || echo "x")
+ 	if [ "$mtk_offloading_enable" == "1" ]; then
+@@ -708,7 +729,7 @@
+ 	fi
+ }
+ 
+-hw-atf-setup()
++hw_atf_setup()
+ {
+ 	FILE="/sys/kernel/debug/ieee80211/phy0/mt76/vow"
+ 	if [ -e "$FILE" ]; then
+@@ -730,7 +751,7 @@
+ 	fi
+ }
+ 
+-enable-HQoS()
++enable_HQoS()
+ {
+ 	FILE="/sbin/mtkhnat"
+ 	if [ -e "$FILE" ]; then
+@@ -746,7 +767,7 @@
+ 	
+ }
+ 
+-usb-setup()
++usb_setup()
+ {
+ 	usb2=$(uci get advanced.@defaults[0].usb_2 2>/dev/null || echo "x")
+ 	if [ $usb2 == 1 ]; then
+@@ -781,6 +802,24 @@
+ 	
+ }
+ 
++clean_irqbalance_config()
++{
++	if [ -f /tmp/smp_affinity_irqs ]; then
++		while IFS= read -r excluded_irq; do
++			if [ -n "$excluded_irq" ]; then
++				logger -s "advanced_setup: removing $excluded_irq from irqbalance exclusions"
++				uci del_list irqbalance.@irqbalance[0].banirq="$excluded_irq"
++			fi
++		done < /tmp/smp_affinity_irqs
++		logger -s "advanced_setup: applying irqbalance changes"
++		uci commit irqbalance
++		if /etc/init.d/irqbalance status > /dev/null 2>&1; then
++			/etc/init.d/irqbalance restart
++		fi
++		rm /tmp/smp_affinity_irqs
++	fi
++}
++
+ service_triggers() {
+     procd_add_reload_trigger advanced
+ }
+@@ -792,10 +831,10 @@
+ 		sleep $delay
+ 		echo 1 > /tmp/smp_affinity_started
+ 	fi
+-	smp-mt76
+-	enable-HQoS
+-	usb-setup
+-	hw-atf-setup
++	smp_mt76
++	enable_HQoS
++	usb_setup
++	hw_atf_setup
+     logger -t advanced_setup "advanced_setup finished"
+ }
+ 
+@@ -818,15 +857,17 @@
+ 				sleep $delay
+ 				echo 1 > /tmp/smp_affinity_started
+ 			fi
+-			smp-mt76
+-			enable-HQoS
+-			usb-setup
+-			hw-atf-setup
++			clean_irqbalance_config
++			smp_mt76
++			enable_HQoS
++			usb_setup
++			hw_atf_setup
+ 			logger -t advanced_setup "advanced_setup finished"
+             ;;
+     esac
+ }
+ 
+ stop_service() {
+-    logger -t advanced_setup "No stop actions defined"
++    #logger -t advanced_setup "No stop actions defined"
++	clean_irqbalance_config
+ }
