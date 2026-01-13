@@ -70,7 +70,7 @@ jobs:
         run: |
           mv -v builder_repo/files ./
           mv -v builder_repo/${{ env.CONFIG_FILE }} .config
-          mv -v builder_repo/patches ./patches
+          mv -v builder_repo/patches ./
           for file in $(find ./patches -name "*.patch" | sort); do patch -f -p1 -i ${file}; done
           make defconfig
 
