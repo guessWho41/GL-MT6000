@@ -69,10 +69,10 @@
  {
  	logger -s "smp_affinity: # Setup affinity of each physical irq."
  	num=0
-+	irqbalance_enabled=$(uci get irqbalance.@irqbalance[0].enabled 2>/dev/null)
++	irqbalance_enabled=$(uci get irqbalance.@irqbalance[0].enabled 2>/dev/null || echo 0)
 +	if [ "$irqbalance_enabled" == 1 ]; then
-+		irqbalance_excluded_irqs=$(uci get irqbalance.@irqbalance[0].banirq 2>/dev/null)
 +		logger -s "smp_affinity: irqbalance is enabled"
++		irqbalance_excluded_irqs=$(uci get irqbalance.@irqbalance[0].banirq 2>/dev/null)
 +		irqbalance_settings_modified=0
 +	fi
  	while [ "$num" -lt "$NUM_OF_CPU" ];do
@@ -82,25 +82,25 @@
  			if [ ! -z $virq ]; then
  				#logger -s "smp_affinity: echo $cpu_bit > /proc/irq/$virq/smp_affinity"
  				echo $cpu_bit > /proc/irq/$virq/smp_affinity
-+				if [ "$irqbalance_enabled" == 1 ]; then
-+					case " $irqbalance_excluded_irqs " in
-+						*" $virq "*) logger -s "smp_affinity: irq $virq already excluded from irqbalance" ;;
-+						*)
-+							logger -s "smp_affinity: adding irq $virq to irqbalance exclusions"
-+							uci add_list irqbalance.@irqbalance[0].banirq="$virq"
-+							echo $virq >> /tmp/smp_affinity_irqs
-+							irqbalance_settings_modified=1
-+							;;
-+					esac
-+				fi
++				case "$irqbalance_enabled: $irqbalance_excluded_irqs " in
++					1:*" $virq "*) logger -s "smp_affinity: irq $virq already excluded from irqbalance" ;;
++					1:*)
++						logger -s "smp_affinity: adding irq $virq to irqbalance exclusions"
++						uci add_list irqbalance.@irqbalance[0].banirq="$virq"
++						echo $virq >> /tmp/smp_affinity_irqs
++						irqbalance_settings_modified=1
++						;;
++				esac
  			fi
  		done
  		num=`expr $num + 1`
  	done
-+	if [ "$irqbalance_settings_modified" == 1 ]; then
++	if [ -f /tmp/smp_affinity_irqs ] && [ "$irqbalance_settings_modified" == 1 ]; then
 +		logger -s "smp_affinity: applying irqbalance changes"
 +		uci commit irqbalance
-+		/etc/init.d/irqbalance restart
++		if /etc/init.d/irqbalance status > /dev/null 2>&1; then
++			/etc/init.d/irqbalance restart
++		fi
 +	fi
  }
  
@@ -150,13 +150,13 @@
 +	if [ -f /tmp/smp_affinity_irqs ]; then
 +		while IFS= read -r excluded_irq; do
 +			if [ -n "$excluded_irq" ]; then
-+				logger -s "advanced_setup: removing $excluded_irq from irqbalance exclusions"
++				logger -s "smp_affinity: removing $excluded_irq from irqbalance exclusions"
 +				uci del_list irqbalance.@irqbalance[0].banirq="$excluded_irq"
 +			fi
 +		done < /tmp/smp_affinity_irqs
-+		logger -s "advanced_setup: applying irqbalance changes"
++		logger -s "smp_affinity: applying irqbalance changes"
 +		uci commit irqbalance
-+		if /etc/init.d/irqbalance status > /dev/null 2>&1; then
++		if [ ! -e /tmp/run/procd.shutdown ] && /etc/init.d/irqbalance status >/dev/null 2>&1; then
 +			/etc/init.d/irqbalance restart
 +		fi
 +		rm /tmp/smp_affinity_irqs
