@@ -75,8 +75,8 @@
 -	logger -s "smp_affinity: WED enable = $WED_ENABLE"
 +	log_msg "[smp_affinity] NUM_WIFI_CARD = $NUM_WIFI_CARD"
 +	log_msg "[smp_affinity] Platform Wi-Fi enabled = $WIFI_RADIO1"
-+	log_msg "[smp_affinity] PCIE1 Wi-Fi enabled = $WIFI_RADIO2"
-+	log_msg "[smp_affinity] PCIE2 Wi-Fi enabled = $WIFI_RADIO3"
++	log_msg "[smp_affinity] PCIe1 Wi-Fi enabled = $WIFI_RADIO2"
++	log_msg "[smp_affinity] PCIe2 Wi-Fi enabled = $WIFI_RADIO3"
 +	log_msg "[smp_affinity] WED enabled = $WED_ENABLE"
  }
  
