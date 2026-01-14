@@ -8,6 +8,7 @@ Repository for building pesa1234's GL.iNET - MT 6000 custom build https://github
 - Bridger
 - DDNS
 - DNS Crypt Proxy
+- Irqbalance with exceptions set by smp_affinity
 - MWAN
 - OpenSSH and SFTP with hardened config from cjom
 - SQM
