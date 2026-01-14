@@ -135,6 +135,7 @@ jobs:
           - **Bridger**
           - **DDNS**
           - **DNS Crypt Proxy**
+          - **Irqbalance with exceptions set by smp_affinity**
           - **MWAN3**
           - **OpenSSH and SFTP with hardened config**
           - **SQM**
