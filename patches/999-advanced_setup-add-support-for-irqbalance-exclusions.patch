@@ -446,7 +446,7 @@
  			if [ $hqos_enable == 1 ]; then
  				/sbin/mtkhnat
 -				logger -s "smp_affinity: mtkhnat_util is enabled and active"
-+				log_msg "[smp_affinity] mtkhnat_util is enabled and active"
++				log_msg "[HQoS] mtkhnat_util is enabled and active"
  			fi
  		fi
  	fi
