@@ -1,0 +1,17 @@
+--- a/feeds/packages/utils/irqbalance/files/irqbalance.init
++++ b/feeds/packages/utils/irqbalance/files/irqbalance.init
+@@ -38,6 +38,14 @@
+ 		procd_append_param command "-i $1"
+ 	}
+ 	config_list_foreach irqbalance banirq handle_banirq_value
++	
++	if [ -f /tmp/smp_affinity_irqs ]; then
++		while read -r smp_affinity_irq; do
++			if [ -n "$smp_affinity_irq" ]; then
++				procd_append_param command "-i $smp_affinity_irq"
++			fi
++		done < /tmp/smp_affinity_irqs
++	fi
+ 
+ 	# debug
+ 	if [ "$debug" -gt 0 ]; then

@@ -327,7 +327,7 @@
  				echo $1 > /sys/class/net/$i/queues/rx-0/rps_cpus
  			fi
  		fi
-@@ -636,27 +638,49 @@
+@@ -636,27 +638,47 @@
  
  set_smp_affinity()
  {
@@ -356,7 +356,6 @@
 +					1:*" $virq "*) log_msg "[smp_affinity] IRQ $virq already excluded from irqbalance" ;;
 +					1:*)
 +						log_msg "[smp_affinity] Adding IRQ $virq to irqbalance exclusions"
-+						uci add_list irqbalance.@irqbalance[0].banirq="$virq"
 +						echo $virq >> /tmp/smp_affinity_irqs
 +						irqbalance_settings_modified=1
 +						;;
@@ -367,7 +366,6 @@
  	done
 +	if [ -f /tmp/smp_affinity_irqs ] && [ "$irqbalance_settings_modified" == 1 ]; then
 +		log_msg "[smp_affinity] Applying irqbalance changes"
-+		uci commit irqbalance
 +		if /etc/init.d/irqbalance status > /dev/null 2>&1; then
 +			/etc/init.d/irqbalance restart
 +		fi
@@ -382,7 +380,7 @@
  VAR_PREFIX="autogen"
  get_if_info
  setup_model
-@@ -669,10 +693,10 @@
+@@ -669,10 +691,10 @@
  		set_rps_cpu_bitmap
  		set_rps_cpus $DEFAULT_RPS
  	else
@@ -395,7 +393,7 @@
  fi
  
  
-@@ -680,11 +704,11 @@
+@@ -680,11 +702,11 @@
  #end of file
  }
  
@@ -409,7 +407,7 @@
  			#TCP Binding
  			iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  			ip6tables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -695,7 +719,7 @@
+@@ -695,7 +717,7 @@
  			iptables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  			ip6tables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  	elif [ "$mtk_offloading_enable" == 0 ]; then
@@ -418,7 +416,7 @@
  			#TCP Binding
  			iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  			ip6tables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -708,11 +732,11 @@
+@@ -708,11 +730,11 @@
  	fi
  }
  
@@ -432,7 +430,7 @@
  		atf=$(uci get advanced.@defaults[0].atf_enable 2>/dev/null || echo "x")
  		hwatf=$(uci get advanced.@defaults[0].hw_atf_enable 2>/dev/null || echo "x")
  		if [ $atf == 1 ]; then
-@@ -730,7 +754,7 @@
+@@ -730,7 +752,7 @@
  	fi
  }
  
@@ -441,7 +439,7 @@
  {
  	FILE="/sbin/mtkhnat"
  	if [ -e "$FILE" ]; then
-@@ -739,30 +763,30 @@
+@@ -739,30 +761,30 @@
  		if [ $mtkutil_enable == 1 ]; then
  			if [ $hqos_enable == 1 ]; then
  				/sbin/mtkhnat
@@ -478,7 +476,7 @@
  		echo 0 > /sys/devices/platform/regulator-usb-vbus/usb_vbus_enable
  	fi
  	
-@@ -771,62 +795,84 @@
+@@ -771,62 +793,76 @@
  	status2=$(cat "$USB2_PATH")
  	statuspower=$(cat "$USBPOWER_PATH")
  	if [ "$status2" -eq 1 ]; then
@@ -498,19 +496,11 @@
 +clean_irqbalance_config()
 +{
 +	if [ -f /tmp/smp_affinity_irqs ]; then
-+		while IFS= read -r excluded_irq; do
-+			if [ -n "$excluded_irq" ]; then
-+				log_msg "[smp_affinity] Removing IRQ $excluded_irq from irqbalance exclusions"
-+				uci del_list irqbalance.@irqbalance[0].banirq="$excluded_irq"
-+			fi
-+		done < /tmp/smp_affinity_irqs
-+		log_msg "[smp_affinity] Applying irqbalance changes"
-+		uci commit irqbalance
++		log_msg "[smp_affinity] Removing irqbalance exceptions"
++		rm /tmp/smp_affinity_irqs
 +		if [ ! -e /tmp/run/procd.shutdown ] && /etc/init.d/irqbalance status >/dev/null 2>&1; then
 +			/etc/init.d/irqbalance restart
 +		fi
-+		rm /tmp/smp_affinity_irqs
-+		log_msg "[smp_affinity] irqbalance exclusions removed"
 +	fi
 +}
 +
