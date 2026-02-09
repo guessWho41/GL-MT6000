@@ -293,7 +293,7 @@
  			var=${var//'.'/_}
  			eval ifval=\$$var
 -			logger -s "smp_affinity: [var val before] \$$var=$ifval"
-+			log_msg "[smp_affinity] [var val before] \$$var=$ifval"
++			log_msg "[smp_affinity] [var val before] $var=$ifval"
  			if [ -z "$ifval" ]; then
  				eval $var=$cpu_bit
  			else
