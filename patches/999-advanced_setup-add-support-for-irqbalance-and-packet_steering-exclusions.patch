@@ -1,0 +1,613 @@
+--- a/target/linux/mediatek/filogic/base-files/etc/init.d/advanced_setup
++++ b/target/linux/mediatek/filogic/base-files/etc/init.d/advanced_setup
+@@ -1,19 +1,25 @@
+ #!/bin/sh /etc/rc.common
+ 
+ START=99
++STOP=10
+ USE_PROCD=1
+ 
+ . /lib/functions.sh
+ 
++log_msg() {
++    local msg="$1"
++    logger -t advanced_setup "$msg"
++    if [ -t 1 ]; then
++        echo "$msg"
++    fi
++}
+ 
+-smp-mt76() {
++smp_mt76() {
+ OPTIMIZED_FOR="$1"
+ CPU_LIST=`cat /proc/interrupts | sed -n '1p'`
+ NUM_OF_CPU=0; for i in $CPU_LIST; do NUM_OF_CPU=`expr $NUM_OF_CPU + 1`; done;
+ DEFAULT_RPS=0
+ 
+-. /lib/functions.sh
+-
+ RPS_IF_LIST=""
+ NUM_WIFI_CARD=0
+ WIFI_RADIO1=0
+@@ -26,7 +32,7 @@
+ get_if_info()
+ {
+ 	# try to get all wifi and eth net interface.
+-	logger -s "smp_affinity: try to get all wifi and eth net interface."
++	log_msg "[smp_affinity] Fetching all Wi-Fi and ethernet interfaces"
+ 	NET_IF_LIST=`ls /sys/class/net`
+ 	for vif in $NET_IF_LIST;
+ 	do
+@@ -36,15 +42,15 @@
+ 			RPS_IF_LIST="$RPS_IF_LIST $vif"
+ 		fi
+ 	done;
+-	logger -s "smp_affinity: RPS_IF_LIST = $RPS_IF_LIST"
++	log_msg "[smp_affinity] RPS_IF_LIST = $RPS_IF_LIST"
+ 
+ 	# try to get wifi physical card num.
+-	logger -s "smp_affinity: try to get wifi physical card num."
++	log_msg "[smp_affinity] Fetching Wi-Fi physical card number"
+ 	VIRTUAL_RADIO_LIST=`ls -l /sys/class/ieee80211/ | awk -F 'devices' '{print $2}' | awk -F 'phy' '{print $1}' | uniq`
+ 	for v in $VIRTUAL_RADIO_LIST;
+ 	do
+ 		NUM_WIFI_CARD=`expr $NUM_WIFI_CARD + 1`
+-		logger -s "smp_affinity: physical raido $v"
++		log_msg "[smp_affinity] Physical radio $v"
+ 		if [[ $v == *"wmac"* ]]; then
+ 			WIFI_RADIO1=1
+ 		fi
+@@ -67,17 +73,17 @@
+ 	do
+ 		if [[ -f "/sys/module/$v/parameters/wed_enable" ]]; then
+ 			WED_ENABLE_LIST=`cat /sys/module/$v/parameters/wed_enable`
+-			logger -s "smp_affinity: wed enable ori info $v $WED_ENABLE_LIST"
++			log_msg "[smp_affinity] WED enabled in module $v = $WED_ENABLE_LIST"
+ 			if [[ $WED_ENABLE_LIST == "Y" ]]; then
+ 				WED_ENABLE=1
+ 			fi
+ 		fi
+ 	done;
+-	logger -s "smp_affinity: NUM_WIFI_CARD = $NUM_WIFI_CARD"
+-	logger -s "smp_affinity: platform wifi enable = $WIFI_RADIO1"
+-	logger -s "smp_affinity: pcie1 wifi enable = $WIFI_RADIO2"
+-	logger -s "smp_affinity: pcie2 wifi enable = $WIFI_RADIO3"
+-	logger -s "smp_affinity: WED enable = $WED_ENABLE"
++	log_msg "[smp_affinity] NUM_WIFI_CARD = $NUM_WIFI_CARD"
++	log_msg "[smp_affinity] Platform Wi-Fi enabled = $WIFI_RADIO1"
++	log_msg "[smp_affinity] PCIe1 Wi-Fi enabled = $WIFI_RADIO2"
++	log_msg "[smp_affinity] PCIe2 Wi-Fi enabled = $WIFI_RADIO3"
++	log_msg "[smp_affinity] WED enabled = $WED_ENABLE"
+ }
+ 
+ # $1: CPU#
+@@ -94,7 +100,7 @@
+ {
+ 	eval oval=\$CPU${1}_RPS
+ 	eval CPU${1}_RPS=\"\$CPU${1}_RPS $2\"
+-	logger -s "smp_affinity: CPU${1}_RPS=\"\$CPU${1}_RPS $2\""
++	log_msg "[smp_affinity] CPU${1}_RPS=\"\$CPU${1}_RPS $2\""
+ }
+ 
+ MT7988()
+@@ -115,7 +121,7 @@
+ 	wifi2_irq_pcie1=
+ 
+ 	if [[ "$WED_ENABLE" -eq "1" ]]; then
+-		logger -s "smp_affinity: WED_ENABLE ON irq/iptable setting"
++		log_msg "[smp_affinity] Settig up WED iptables rules"
+ 		#TCP Binding
+ 		iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
+ 		iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
+@@ -131,9 +137,6 @@
+ 		iptables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
+ 		ip6tables -D FORWARD -m pkttype --pkt-type multicast -j ACCEPT
+ 		ip6tables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
+-
+-	else
+-		logger -s "smp_affinity: WED_ENABLE OFF irq/iptable seting"
+ 	fi
+ 
+ 	for vif in $NET_IF_LIST;
+@@ -142,7 +145,7 @@
+ 			WIFI_IF_LIST="$WIFI_IF_LIST $vif"
+ 		fi
+ 	done;
+-	logger -s "smp_affinity: $WIFI_IF_LIST = $WIFI_IF_LIST"
++	log_msg "[smp_affinity] $WIFI_IF_LIST = $WIFI_IF_LIST"
+ 	# Please update the CPU binding in each cases.
+ 	# CPU#_AFFINITY="add binding irq number here"
+ 	# CPU#_RPS="add binding interface name here"
+@@ -168,10 +171,10 @@
+ 		CPU2_RPS=""
+ 		CPU3_RPS=""
+ 	fi
+-	logger -s "smp_affinity: CPU0_AFFINITY = $CPU0_AFFINITY"
+-	logger -s "smp_affinity: CPU1_AFFINITY = $CPU1_AFFINITY"
+-	logger -s "smp_affinity: CPU2_AFFINITY = $CPU2_AFFINITY"
+-	logger -s "smp_affinity: CPU3_AFFINITY = $CPU3_AFFINITY"
++	log_msg "[smp_affinity] CPU0_AFFINITY = $CPU0_AFFINITY"
++	log_msg "[smp_affinity] CPU1_AFFINITY = $CPU1_AFFINITY"
++	log_msg "[smp_affinity] CPU2_AFFINITY = $CPU2_AFFINITY"
++	log_msg "[smp_affinity] CPU3_AFFINITY = $CPU3_AFFINITY"
+ }
+ 
+ MT7986()
+@@ -191,7 +194,7 @@
+ 	wifi3_irq=
+ 
+ 	if [[ "$WED_ENABLE" -eq "1" ]]; then
+-		logger -s "smp_affinity: WED_ENABLE ON irq/iptable setting"
++		log_msg "[smp_affinity] Settig up WED iptables rules"
+ 		#TCP Binding
+ 		iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
+ 		iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
+@@ -221,7 +224,6 @@
+ 		#	wifi3_irq=239
+ 		#fi
+ 	else
+-		logger -s "smp_affinity: WED_ENABLE OFF irq/iptable setting"
+ 		#AX6000 AX7800 - SOC
+ 		if [[ "$WIFI_RADIO1" -eq "1" ]]; then
+ 			wifi1_irq=245
+@@ -242,7 +244,7 @@
+ 			WIFI_IF_LIST="$WIFI_IF_LIST $vif"
+ 		fi
+ 	done;
+-	logger -s "smp_affinity: $WIFI_IF_LIST = $WIFI_IF_LIST"
++	log_msg "[smp_affinity] $WIFI_IF_LIST = $WIFI_IF_LIST"
+ 	# Please update the CPU binding in each cases.
+ 	# CPU#_AFFINITY="add binding irq number here"
+ 	# CPU#_RPS="add binding interface name here"
+@@ -268,13 +270,13 @@
+ 		CPU2_RPS="$WIFI_IF_LIST"
+ 		CPU3_RPS="$WIFI_IF_LIST"
+ 	fi
+-	logger -s "smp_affinity: CPU0_AFFINITY = $CPU0_AFFINITY"
+-	logger -s "smp_affinity: CPU1_AFFINITY = $CPU1_AFFINITY"
+-	logger -s "smp_affinity: CPU2_AFFINITY = $CPU2_AFFINITY"
+-	logger -s "smp_affinity: CPU3_AFFINITY = $CPU3_AFFINITY"
++	log_msg "[smp_affinity] CPU0_AFFINITY = $CPU0_AFFINITY"
++	log_msg "[smp_affinity] CPU1_AFFINITY = $CPU1_AFFINITY"
++	log_msg "[smp_affinity] CPU2_AFFINITY = $CPU2_AFFINITY"
++	log_msg "[smp_affinity] CPU3_AFFINITY = $CPU3_AFFINITY"
+ }
+ 
+-gl-mt6000()
++gl_mt6000()
+ {
+ 	num_of_wifi=$1
+ 	DEFAULT_RPS=0
+@@ -356,9 +358,9 @@
+ 
+ 	BRIDGE_MEMBERS=$(echo $BRIDGE_MEMBERS | tr ' ' '\n' | sort -u | tr '\n' ' ')
+ 	
+-	logger -s "smp_affinity: WAN_IF_LIST = $WAN_IF_LIST"
+-	logger -s "smp_affinity: BRIDGE_LIST = $BRIDGE_MEMBERS"
+-	logger -s "smp_affinity: WIFI_IF_LIST = $WIFI_IF_LIST"
++	log_msg "[smp_affinity] WAN_IF_LIST = $WAN_IF_LIST"
++	log_msg "[smp_affinity] BRIDGE_LIST = $BRIDGE_MEMBERS"
++	log_msg "[smp_affinity] WIFI_IF_LIST = $WIFI_IF_LIST"
+ 	
+ 	# Please update the CPU binding in each cases.
+ 	# CPU#_AFFINITY="add binding irq number here"
+@@ -400,7 +402,7 @@
+ 
+ 	#AX3000
+ 	if [[ "$WED_ENABLE" -eq "1" ]]; then
+-		logger -s "smp_affinity: WED_ENABLE ON irq/iptable setting"
++		log_msg "[smp_affinity] Settig up WED iptables rules"
+ 		#TCP Binding
+ 		iptables -D FORWARD -p tcp -m conntrack --ctstate	\
+ 				RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
+@@ -447,11 +449,11 @@
+ 		CPU0_RPS="$RPS_IF_LIST"
+ 		CPU1_RPS="$RPS_IF_LIST"
+ 	fi
+-	logger -s "smp_affinity: CPU0_AFFINITY = $CPU0_AFFINITY"
+-	logger -s "smp_affinity: CPU1_AFFINITY = $CPU1_AFFINITY"
++	log_msg "[smp_affinity] CPU0_AFFINITY = $CPU0_AFFINITY"
++	log_msg "[smp_affinity] CPU1_AFFINITY = $CPU1_AFFINITY"
+ }
+ 
+-gl-mt3000()
++gl_mt3000()
+ {
+ 	num_of_wifi=$1
+ 	DEFAULT_RPS=0
+@@ -492,8 +494,8 @@
+ 		CPU0_RPS="$RPS_IF_LIST"
+ 		CPU1_RPS="$RPS_IF_LIST"
+ 	fi
+-	logger -s "smp_affinity: CPU0_AFFINITY = $CPU0_AFFINITY"
+-	logger -s "smp_affinity: CPU1_AFFINITY = $CPU1_AFFINITY"
++	log_msg "[smp_affinity] CPU0_AFFINITY = $CPU0_AFFINITY"
++	log_msg "[smp_affinity] CPU1_AFFINITY = $CPU1_AFFINITY"
+ }
+ 
+ MT7622()
+@@ -538,36 +540,36 @@
+ 		CPU1_RPS="$RPS_IF_LIST"
+ 	fi
+ 
+-	logger -s "smp_affinity: CPU0_AFFINITY = $CPU0_AFFINITY"
+-	logger -s "smp_affinity: CPU1_AFFINITY = $CPU1_AFFINITY"
++	log_msg "[smp_affinity] CPU0_AFFINITY = $CPU0_AFFINITY"
++	log_msg "[smp_affinity] CPU1_AFFINITY = $CPU1_AFFINITY"
+ }
+ 
+ setup_model()
+ {
+ 	board=$(board_name)
+-	logger -s "smp_affinity: Board name: $board"
++	log_msg "[smp_affinity] Board name: $board"
+ 	num_of_wifi=$NUM_WIFI_CARD
+ 
+ 	if [[ $board == *"7988"* ]]; then
+-		logger -s "smp_affinity: setup_model: MT7988 NUM_WIFI_CARD=$num_of_wifi"
++		log_msg "[smp_affinity] setup_model: MT7988 NUM_WIFI_CARD=$num_of_wifi"
+ 		MT7988 $num_of_wifi
+ 	elif [[ $board == *"7986"* ]]; then
+-		logger -s "smp_affinity: setup_model: MT7986 NUM_WIFI_CARD=$num_of_wifi"
++		log_msg "[smp_affinity] setup_model: MT7986 NUM_WIFI_CARD=$num_of_wifi"
+ 		MT7986 $num_of_wifi
+ 	elif [[ $board == *"gl-mt6000"* ]]; then
+-		logger -s "smp_affinity: setup_model: gl-mt6000 NUM_WIFI_CARD=$num_of_wifi"
+-		gl-mt6000 $num_of_wifi
++		log_msg "[smp_affinity] setup_model: gl-mt6000 NUM_WIFI_CARD=$num_of_wifi"
++		gl_mt6000 $num_of_wifi
+ 	elif [[ $board == *"7981"* ]]; then
+-		logger -s "smp_affinity: setup_model: MT7981 NUM_WIFI_CARD=$num_of_wifi"
++		log_msg "[smp_affinity] setup_model: MT7981 NUM_WIFI_CARD=$num_of_wifi"
+ 		MT7981 $num_of_wifi
+ 	elif [[ $board == *"gl-mt3000"* ]]; then
+-		logger -s "smp_affinity: setup_model: gl-mt3000 NUM_WIFI_CARD=$num_of_wifi"
+-		gl-mt3000 $num_of_wifi
++		log_msg "[smp_affinity] setup_model: gl-mt3000 NUM_WIFI_CARD=$num_of_wifi"
++		gl_mt3000 $num_of_wifi
+ 	elif [[ $board == *"7622"* ]]; then
+-		logger -s "smp_affinity: setup_model: MT7622 NUM_WIFI_CARD=$num_of_wifi"
++		log_msg "[smp_affinity] setup_model: MT7622 NUM_WIFI_CARD=$num_of_wifi"
+ 		MT7622 $num_of_wifi
+ 	elif [[ $board == *"bpi-r4"* ]]; then
+-		logger -s "smp_affinity: setup_model: bpi-r4 NUM_WIFI_CARD=$num_of_wifi"
++		log_msg "[smp_affinity] setup_model: bpi-r4 NUM_WIFI_CARD=$num_of_wifi"
+ 		MT7988 $num_of_wifi
+ 	fi
+ }
+@@ -589,25 +591,25 @@
+ 
+ set_rps_cpu_bitmap()
+ {
+-	logger -s "smp_affinity: # Scan binding interfaces of each cpu"
++	log_msg "[smp_affinity] Scanning binding interfaces of each CPU"
+ 	# suppose the value of interface_var is null or hex
+ 	num=0
+ 	while [ "$num" -lt "$NUM_OF_CPU" ];do
+ 		cpu_bit=$((2 ** $num))
+ 		eval rps_list=\$CPU${num}_RPS
+-		logger -s "smp_affinity: # CPU$num: rps_list=$rps_list"
++		log_msg "[smp_affinity] CPU$num: rps_list=$rps_list"
+ 		for i in $rps_list; do
+ 			var=${VAR_PREFIX}_${i//'-'/_}
+ 			var=${var//'.'/_}
+ 			eval ifval=\$$var
+-			logger -s "smp_affinity: [var val before] \$$var=$ifval"
++			log_msg "[smp_affinity] [var val before] $var=$ifval"
+ 			if [ -z "$ifval" ]; then
+ 				eval $var=$cpu_bit
+ 			else
+ 				eval $var=`expr $ifval + $cpu_bit`
+ 			fi
+ 			eval ifval=\$$var
+-			logger -s "smp_affinity: [rps val after]$i=$ifval"
++			log_msg "[smp_affinity] [rps val after]$i=$ifval"
+ 		done
+ 		num=`expr $num + 1`
+ 	done
+@@ -616,7 +618,7 @@
+ # $1: The default rps value. If rps of the interface is not setup, set $1 to it
+ set_rps_cpus()
+ {
+-	logger -s "smp_affinity: # Setup rps of the interfaces, $RPS_IF_LIST."
++	log_msg "[smp_affinity] Setting up RPS on interfaces: $RPS_IF_LIST"
+ 	for i in $RPS_IF_LIST; do
+ 		var=${VAR_PREFIX}_${i//'-'/_}
+ 		var=${var//'.'/_}
+@@ -624,10 +626,10 @@
+ 		if [ -d /sys/class/net/$i ]; then
+ 			if [ ! -z $cpu_map ]; then
+ 				cpu_map=`printf '%x' $cpu_map`
+-				logger -s "smp_affinity: echo $cpu_map > /sys/class/net/$i/queues/rx-0/rps_cpus"
++				log_msg "[smp_affinity] echo $cpu_map > /sys/class/net/$i/queues/rx-0/rps_cpus"
+ 				echo $cpu_map > /sys/class/net/$i/queues/rx-0/rps_cpus
+ 			elif [ ! -z $1 ]; then
+-				logger -s "smp_affinity: echo $1 > /sys/class/net/$i/queues/rx-0/rps_cpus"
++				log_msg "[smp_affinity] echo $1 > /sys/class/net/$i/queues/rx-0/rps_cpus"
+ 				echo $1 > /sys/class/net/$i/queues/rx-0/rps_cpus
+ 			fi
+ 		fi
+@@ -636,27 +638,47 @@
+ 
+ set_smp_affinity()
+ {
+-	logger -s "smp_affinity: # Setup affinity of each physical irq."
++	log_msg "[smp_affinity] Setting up affinity of each physical IRQ"
+ 	num=0
++	irqbalance_enabled=$(uci get irqbalance.@irqbalance[0].enabled 2>/dev/null || echo 0)
++	if [ "$irqbalance_enabled" == 1 ]; then
++		log_msg "[smp_affinity] irqbalance is enabled"
++		irqbalance_excluded_irqs=$(uci get irqbalance.@irqbalance[0].banirq 2>/dev/null)
++		irqbalance_settings_modified=0
++	fi
+ 	while [ "$num" -lt "$NUM_OF_CPU" ];do
+ 		eval smp_list=\$CPU${num}_AFFINITY
+ 		for i in $smp_list; do
+ 			cpu_bit=$((2 ** $num))
+ 			virq=$(get_virtual_irq $i)
+ 			#virq=$i
+-			logger -s "smp_affinity: irq p2v $i --> $virq"
++			log_msg "[smp_affinity] IRQ p2v $i --> $virq"
+ 			if [ ! -z $virq ]; then
+-				#logger -s "smp_affinity: echo $cpu_bit > /proc/irq/$virq/smp_affinity"
++				#log_msg "[smp_affinity] echo $cpu_bit > /proc/irq/$virq/smp_affinity"
+ 				echo $cpu_bit > /proc/irq/$virq/smp_affinity
++				case "$irqbalance_enabled: $irqbalance_excluded_irqs " in
++					1:*" $virq "*) log_msg "[smp_affinity] IRQ $virq already excluded from irqbalance" ;;
++					1:*)
++						log_msg "[smp_affinity] Adding IRQ $virq to irqbalance exclusions"
++						echo $virq >> /tmp/smp_affinity_irqs
++						irqbalance_settings_modified=1
++						;;
++				esac
+ 			fi
+ 		done
+ 		num=`expr $num + 1`
+ 	done
++	if [ -f /tmp/smp_affinity_irqs ] && [ "$irqbalance_settings_modified" == 1 ]; then
++		log_msg "[smp_affinity] Applying irqbalance changes"
++		if /etc/init.d/irqbalance status > /dev/null 2>&1; then
++			/etc/init.d/irqbalance restart
++		fi
++	fi
+ }
+ 
+ 
+-logger -s "smp_affinity: # RPS and AFFINITY Setting"
+-logger -s "smp_affinity: # NUM_OF_CPU=$NUM_OF_CPU"
++log_msg "[smp_affinity] Setting up RPS and affinity"
++log_msg "[smp_affinity] NUM_OF_CPU=$NUM_OF_CPU"
+ VAR_PREFIX="autogen"
+ get_if_info
+ setup_model
+@@ -669,10 +691,10 @@
+ 		set_rps_cpu_bitmap
+ 		set_rps_cpus $DEFAULT_RPS
+ 	else
+-		logger -s "smp_affinity: # RPS disabled"
++		log_msg "[smp_affinity] RPS is disabled"
+ 	fi
+ else
+-	logger -s "smp_affinity: # RPS done by packet steering script"
++	log_msg "[smp_affinity] RPS is set up by packet steering script"
+ fi
+ 
+ 
+@@ -680,11 +702,11 @@
+ #end of file
+ }
+ 
+-mtk-offloading()
++mtk_offloading()
+ {
+ 	mtk_offloading_enable=$(uci get advanced.@defaults[0].mtk_offloading_enable 2>/dev/null || echo "x")
+ 	if [ "$mtk_offloading_enable" == "1" ]; then
+-			logger -s "smp_affinity: Enabling mtk offloading"
++			log_msg "[smp_affinity] Enabling mtk offloading"
+ 			#TCP Binding
+ 			iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
+ 			ip6tables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
+@@ -695,7 +717,7 @@
+ 			iptables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
+ 			ip6tables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
+ 	elif [ "$mtk_offloading_enable" == 0 ]; then
+-			logger -s "smp_affinity: Disabling mtk offloading"
++			log_msg "[smp_affinity] Disabling mtk offloading"
+ 			#TCP Binding
+ 			iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
+ 			ip6tables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
+@@ -708,11 +730,11 @@
+ 	fi
+ }
+ 
+-hw-atf-setup()
++hw_atf_setup()
+ {
+ 	FILE="/sys/kernel/debug/ieee80211/phy0/mt76/vow"
+ 	if [ -e "$FILE" ]; then
+-		logger -s "smp_affinity: HW-ATF available"
++		log_msg "[smp_affinity] HW-ATF is available"
+ 		atf=$(uci get advanced.@defaults[0].atf_enable 2>/dev/null || echo "x")
+ 		hwatf=$(uci get advanced.@defaults[0].hw_atf_enable 2>/dev/null || echo "x")
+ 		if [ $atf == 1 ]; then
+@@ -730,7 +752,7 @@
+ 	fi
+ }
+ 
+-enable-HQoS()
++enable_HQoS()
+ {
+ 	FILE="/sbin/mtkhnat"
+ 	if [ -e "$FILE" ]; then
+@@ -739,30 +761,30 @@
+ 		if [ $mtkutil_enable == 1 ]; then
+ 			if [ $hqos_enable == 1 ]; then
+ 				/sbin/mtkhnat
+-				logger -s "smp_affinity: mtkhnat_util is enabled and active"
++				log_msg "[HQoS] mtkhnat_util is enabled and active"
+ 			fi
+ 		fi
+ 	fi
+ 	
+ }
+ 
+-usb-setup()
++usb_setup()
+ {
+ 	usb2=$(uci get advanced.@defaults[0].usb_2 2>/dev/null || echo "x")
+ 	if [ $usb2 == 1 ]; then
+-		logger -s "advanced_setup: USB Speed set to 2.0"
++		log_msg "[USB] USB port speed is set to 2.0"
+ 		echo 1 > /sys/bus/usb/devices/usb2/2-0:1.0/usb2-port1/disable
+ 	elif [ $usb2 == 0 ]; then
+-		logger -s "advanced_setup: USB Speed set to 3.0"
++		log_msg "[USB] USB port speed is set to 3.0"
+ 		echo 0 > /sys/bus/usb/devices/usb2/2-0:1.0/usb2-port1/disable
+ 	fi
+ 	
+ 	usbpower=$(uci get advanced.@defaults[0].usb_power 2>/dev/null || echo "x")
+ 	if [ $usbpower == 1 ]; then
+-		logger -s "advanced_setup: USB Power ON"
++		log_msg "[USB] Turning on USB port power"
+ 		echo 1 > /sys/devices/platform/regulator-usb-vbus/usb_vbus_enable
+ 	elif [ $usbpower == 0 ]; then
+-		logger -s "advanced_setup: USB Power OFF"
++		log_msg "[USB] Turning off USB port power"
+ 		echo 0 > /sys/devices/platform/regulator-usb-vbus/usb_vbus_enable
+ 	fi
+ 	
+@@ -771,62 +793,76 @@
+ 	status2=$(cat "$USB2_PATH")
+ 	statuspower=$(cat "$USBPOWER_PATH")
+ 	if [ "$status2" -eq 1 ]; then
+-		logger -s "advanced_setup: USB Speed is set to 2.0"
++		log_msg "[USB] USB speed is set to 2.0"
+ 	fi
+ 	if [ "$statuspower" -eq 1 ]; then
+-		logger -s "advanced_setup: USB is power ON"
++		log_msg "[USB] USB port power is enabled"
+ 	else
+-		logger -s "advanced_setup: USB is power OFF"
++		log_msg "[USB] USB port power is disabled"
+ 	fi
+ 	
+ }
+ 
++clean_irqbalance_config()
++{
++	if [ -f /tmp/smp_affinity_irqs ]; then
++		log_msg "[smp_affinity] Removing irqbalance exceptions"
++		rm /tmp/smp_affinity_irqs
++		if [ ! -e /tmp/run/procd.shutdown ] && /etc/init.d/irqbalance status >/dev/null 2>&1; then
++			/etc/init.d/irqbalance restart
++		fi
++	fi
++}
++
+ service_triggers() {
+     procd_add_reload_trigger advanced
+ }
+ 
+ start_service() {
++	log_msg "Starting"
+     if [ ! -f /tmp/smp_affinity_started ]; then
+ 		delay=$(uci get advanced.@advanced_packet_steering[0].advanced_packet_steering_delay 2>/dev/null || echo "30")
+-		logger -s "smp_affinity: Starting with delay of $delay sec."
++		log_msg "[smp_affinity] Starting with delay of $delay sec."
+ 		sleep $delay
+ 		echo 1 > /tmp/smp_affinity_started
+ 	fi
+-	smp-mt76
+-	enable-HQoS
+-	usb-setup
+-	hw-atf-setup
+-    logger -t advanced_setup "advanced_setup finished"
++	smp_mt76
++	enable_HQoS
++	hw_atf_setup
++	usb_setup
++    log_msg "Finished"
+ }
+ 
+ reload_service() {
+     trigger="$1"
+     case "$trigger" in
+         atf)
+-			logger -t advanced_setup "advanced_setup atf"
++			log_msg "Reloading ATF settings"
+             hw_atf_setup
+             ;;
+         usb)
+-			logger -t advanced_setup "advanced_setup usb"
++			log_msg "Reloading USB settings"
+             usb_setup
+             ;;
+         *)
+-			logger -t advanced_setup "advanced_setup generic"
++			log_msg "Reloading all settings"
+ 			if [ ! -f /tmp/smp_affinity_started ]; then
+ 				delay=$(uci get advanced.@advanced_packet_steering[0].advanced_packet_steering_delay 2>/dev/null || echo "30")
+-				logger -s "smp_affinity: Starting with delay of $delay sec."
++				log_msg "[smp_affinity] Starting with delay of $delay sec."
+ 				sleep $delay
+ 				echo 1 > /tmp/smp_affinity_started
+ 			fi
+-			smp-mt76
+-			enable-HQoS
+-			usb-setup
+-			hw-atf-setup
+-			logger -t advanced_setup "advanced_setup finished"
++			clean_irqbalance_config
++			smp_mt76
++			enable_HQoS
++			hw_atf_setup
++			usb_setup
+             ;;
+     esac
++	log_msg "Finished"
+ }
+ 
+ stop_service() {
+-    logger -t advanced_setup "No stop actions defined"
++    #log_msg "No stop actions defined"
++	clean_irqbalance_config
+ }
+--- a/feeds/packages/utils/irqbalance/files/irqbalance.init
++++ b/feeds/packages/utils/irqbalance/files/irqbalance.init
+@@ -38,6 +38,14 @@
+ 		procd_append_param command "-i $1"
+ 	}
+ 	config_list_foreach irqbalance banirq handle_banirq_value
++	
++	if [ -f /tmp/smp_affinity_irqs ]; then
++		while read -r smp_affinity_irq; do
++			if [ -n "$smp_affinity_irq" ]; then
++				procd_append_param command "-i $smp_affinity_irq"
++			fi
++		done < /tmp/smp_affinity_irqs
++	fi
+ 
+ 	# debug
+ 	if [ "$debug" -gt 0 ]; then
+--- a/package/network/config/netifd/files/etc/init.d/packet_steering
++++ b/package/network/config/netifd/files/etc/init.d/packet_steering
+@@ -15,11 +15,13 @@
+ 
+ reload_service() {
+ 	packet_steering="$(uci -q get "network.@globals[0].packet_steering")"
+-	steering_flows="$(uci -q get "network.@globals[0].steering_flows")"
+-	[ "${steering_flows:-0}" -gt 0 ] && opts="-l $steering_flows"
+-	if [ -e "/usr/libexec/platform/packet-steering.sh" ]; then
+-		/usr/libexec/platform/packet-steering.sh "$packet_steering"
+-	else
+-		/usr/libexec/network/packet-steering.uc $opts "$packet_steering"
++	if [ -n "$packet_steering" ] && [ "$packet_steering" != "0" ]; then
++		steering_flows="$(uci -q get "network.@globals[0].steering_flows")"
++		[ "${steering_flows:-0}" -gt 0 ] && opts="-l $steering_flows"
++		if [ -e "/usr/libexec/platform/packet-steering.sh" ]; then
++			/usr/libexec/platform/packet-steering.sh "$packet_steering"
++		else
++			/usr/libexec/network/packet-steering.uc $opts "$packet_steering"
++		fi
+ 	fi
+ }
