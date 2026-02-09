@@ -86,14 +86,9 @@ jobs:
             sleep 30
             make -j1 V=s
           }
-          # BUILD_DIR=$(find ./bin -maxdepth 1 -mindepth 1 -type d)
-          # DEST=./firmware
-          # NAME=$(basename "$BUILD_DIR")
-          # mkdir -p "$DEST/$NAME"
-          # find "$BUILD_DIR" -mindepth 1 -maxdepth 1 ! -name packages -exec mv -t "$DEST/$NAME" {} +
           mkdir -p ./release
-          find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} ./release/ \; ||:
-          mv .config release/full.config ||:
+          find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec mv -v {} ./release/ \; ||:
+          mv .config release/mt6000.config ||:
           cd ./release && find -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \; ||:
 
       - name: Upload artifacts
