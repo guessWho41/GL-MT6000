@@ -11,7 +11,7 @@ Repository for building [pesa1234's](https://forum.openwrt.org/u/pesa1234) GL.iN
 - Irqbalance with exceptions set by smp_affinity
 - MWAN3
 - OpenSSH and SFTP with hardened config from [Cjom](https://forum.openwrt.org/u/cjom)
-- SQM with mq_cake by [Jason Woringen](https://forum.openwrt.org/u/mindwolf)
+- SQM with mq_cake script by [Jason Woringen](https://forum.openwrt.org/u/mindwolf)
 - TCP BBR
 - UPnP
 - Wireguard
