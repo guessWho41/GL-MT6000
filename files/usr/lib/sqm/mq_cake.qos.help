@@ -1,0 +1,2 @@
+Dstributes ingress shaping across multiple CPU cores using multi-queue IFB.
+Solves single-core bottleneck for high-speed connections
