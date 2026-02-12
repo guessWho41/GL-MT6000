@@ -11,7 +11,7 @@ Repository for building [Pesa1234's](https://forum.openwrt.org/u/pesa1234) [GL.i
 - Irqbalance with exceptions set by smp_affinity
 - MWAN3
 - OpenSSH and SFTP with [hardened config](https://github.com/cjom/GL-MT6000/tree/main/files/etc/ssh) from [Cjom](https://forum.openwrt.org/u/cjom)
-- SQM with [mq_cake](https://forum.openwrt.org/t/mt6000-custom-build-with-luci-and-some-optimization-kernel-6-12-x/185241/2761?u=guesswho41) script by [mindwolf](https://forum.openwrt.org/u/mindwolf)
+- SQM with [mq_cake](https://forum.openwrt.org/t/mt6000-custom-build-with-luci-and-some-optimization-kernel-6-12-x/185241/2811) script by [mindwolf](https://forum.openwrt.org/u/mindwolf)
 - TCP BBR
 - UPnP
 - Wireguard
