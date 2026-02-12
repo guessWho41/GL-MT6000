@@ -17,7 +17,7 @@ sqm_debug "Detected ${NUM_QUEUES} CPU cores"
 
 egress() {
     sqm_debug "egress (standard single-queue)"
-    SILENT=1 $TC qdisc del dev $IFACE root
+    SILENT=1 $TC qdisc del dev $IFACE root 2>/dev/null
     $TC qdisc add dev $IFACE root $( get_stab_string ) cake \
         bandwidth ${UPLINK}kbit $( get_cake_lla_string ) ${EGRESS_CAKE_OPTS} ${EQDISC_OPTS}
 }
@@ -25,40 +25,37 @@ egress() {
 ingress() {
     sqm_debug "ingress (multi-queue IFB with ${NUM_QUEUES} queues)"
 
-    # Clean up
-    SILENT=1 $TC qdisc del dev $IFACE handle ffff: ingress
-    SILENT=1 $IP link del dev $DEV 2>/dev/null
+    SILENT=1 $TC qdisc del dev $IFACE handle ffff: ingress 2>/dev/null
+    if [ -d "/sys/class/net/$DEV" ]; then
+        $IP link set dev $DEV down 2>/dev/null
+        SILENT=1 $TC qdisc del dev $DEV root 2>/dev/null
+        SILENT=1 $IP link del dev $DEV 2>/dev/null
+    fi
 
-    # Enable RPS on physical interface RX (distribute to CPU1,2,3)
-    local rps_mask="e"  # 0xe = CPU1+CPU2+CPU3 (avoid CPU0)
+    insmod act_skbedit 2>/dev/null
+
+    local rps_mask="e"
     sqm_debug "Enabling RPS on $IFACE RX queue (mask: ${rps_mask})"
     echo ${rps_mask} > /sys/class/net/$IFACE/queues/rx-0/rps_cpus 2>/dev/null || \
         sqm_warn "Could not set RPS for $IFACE rx-0"
 
-    # Create multi-queue IFB
     $IP link add $DEV numtxqueues ${NUM_QUEUES} type ifb || {
         sqm_error "Failed to create multi-queue IFB"
         return 1
     }
     $IP link set dev $DEV up
 
-    # Enable RPS on IFB RX for pre-distribution
-    local ifb_rps_mask="f"  # All CPUs for IFB
-    sqm_debug "Enabling RPS on $DEV RX queue (mask: ${ifb_rps_mask})"
-    echo ${ifb_rps_mask} > /sys/class/net/$DEV/queues/rx-0/rps_cpus 2>/dev/null || \
-        sqm_warn "Could not set RPS for $DEV rx-0"
+    local ifb_rps_mask="f"
+    echo ${ifb_rps_mask} > /sys/class/net/$DEV/queues/rx-0/rps_cpus 2>/dev/null
 
-    # Calculate bandwidth per queue
     local BW_PER_QUEUE=$(( ${DOWNLINK} / ${NUM_QUEUES} ))
     sqm_debug "Bandwidth per queue: ${BW_PER_QUEUE}kbit"
 
-    # Set up mq root qdisc on the IFB
     $TC qdisc add dev $DEV root handle 1: mq || {
-        sqm_error "Failed to add mq qdisc - multi-queue IFB not supported by kernel"
+        sqm_error "Failed to add mq qdisc"
         return 1
     }
 
-    # Add CAKE to each queue
     local i
     for i in $(seq 1 ${NUM_QUEUES}); do
         sqm_debug "Adding CAKE to queue 1:${i}"
@@ -69,22 +66,21 @@ ingress() {
         }
     done
 
-    # Enable XPS on IFB TX queues (all CPUs)
-    local xps_mask="f"  # All CPUs
+    local xps_mask="f"
     sqm_debug "Enabling XPS on $DEV TX queues (mask: ${xps_mask})"
     for i in $(seq 0 $((${NUM_QUEUES} - 1))); do
         echo ${xps_mask} > /sys/class/net/$DEV/queues/tx-${i}/xps_cpus 2>/dev/null || \
             sqm_warn "Could not set XPS for $DEV tx-${i}"
     done
 
-    # Set up ingress redirection
     $TC qdisc add dev $IFACE handle ffff: ingress
     $TC filter add dev $IFACE parent ffff: protocol all prio 10 u32 \
-        match u32 0 0 flowid 1:1 action mirred egress redirect dev $DEV
+        match u32 0 0 \
+        action skbedit queue_mapping 0 \
+        action mirred egress redirect dev $DEV
 }
 
 sqm_prepare_script() {
     do_modules
     verify_qdisc $QDISC "cake" || return 1
-    # mq verification skipped - tested during ingress()
 }
