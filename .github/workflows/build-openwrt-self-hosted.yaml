@@ -31,7 +31,8 @@ jobs:
         id: check_commits
         run: |
           remote_branch=$(git ls-remote https://github.com/${{ env.REMOTE_REPOSITORY }}.git "refs/heads/next-*" | sed -e 's|\(.*heads/\)||' | grep -viE 'test|beta' | sort -V | tail -n1)
-          [ -n "$remote_branch" ] && latest_commit_sha=$(gh api "repos/${{ env.REMOTE_REPOSITORY }}/commits/${remote_branch}" --jq .sha)
+          #[ -n "$remote_branch" ] && latest_commit_sha=$(gh api "repos/${{ env.REMOTE_REPOSITORY }}/commits/${remote_branch}" --jq .sha)
+          [ -n "$remote_branch" ] && latest_commit_sha='a3f20f21404979b18b72feb4a193a2d95665c654'
           [ -z "$latest_commit_sha" ] && { echo "*** COULD NOT GET latest_commit_sha FROM remote_branch=$remote_branch ***" ; exit 1; }
           gh api "repos/${{ github.repository }}/releases/latest" --jq .body 2>/dev/null | grep -q "${latest_commit_sha}" && echo "new_commits=false" >> $GITHUB_OUTPUT || echo "new_commits=true" >> $GITHUB_OUTPUT
           echo "remote_branch=${remote_branch}"
@@ -39,7 +40,6 @@ jobs:
           echo "latest_commit_sha=$latest_commit_sha"
           echo "remote_branch=${remote_branch}" >> $GITHUB_OUTPUT
           echo "release_prefix=${remote_branch%.rss*}" >> $GITHUB_OUTPUT
-          latest_commit_sha='a3f20f21404979b18b72feb4a193a2d95665c654'
           echo "latest_commit_sha=$latest_commit_sha" >> $GITHUB_OUTPUT
 
   build:
