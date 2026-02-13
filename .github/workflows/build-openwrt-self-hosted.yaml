@@ -26,7 +26,7 @@ jobs:
       release_prefix: ${{ steps.check_commits.outputs.release_prefix }}
       new_commits: ${{ steps.check_commits.outputs.new_commits }}
       #latest_commit_sha: ${{ steps.check_commits.outputs.latest_commit_sha }}
-      latest_commit_sha: a3f20f21404979b18b72feb4a193a2d95665c654
+      latest_commit_sha: 'a3f20f21404979b18b72feb4a193a2d95665c654'
     steps:
       - name: Check for new commits in pesa1234 repo
         id: check_commits
@@ -52,7 +52,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.REMOTE_REPOSITORY }}
-          ref: ${{ needs.check_commits.outputs.remote_branch }}
+          #ref: ${{ needs.check_commits.outputs.remote_branch }}
+          ref: 'a3f20f21404979b18b72feb4a193a2d95665c654'
           fetch-depth: 0
 
       - name: Checkout current repository
