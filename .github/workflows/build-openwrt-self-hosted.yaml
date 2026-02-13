@@ -30,9 +30,10 @@ jobs:
       - name: Check for new commits in pesa1234 repo
         id: check_commits
         run: |
-          remote_branch=$(git ls-remote https://github.com/${{ env.REMOTE_REPOSITORY }}.git "refs/heads/next-*" | sed -e 's|\(.*heads/\)||' | grep -viE 'test|beta' | sort -V | tail -n1)
-          #[ -n "$remote_branch" ] && latest_commit_sha=$(gh api "repos/${{ env.REMOTE_REPOSITORY }}/commits/${remote_branch}" --jq .sha)
-          [ -n "$remote_branch" ] && latest_commit_sha='a3f20f21404979b18b72feb4a193a2d95665c654'
+          #remote_branch=$(git ls-remote https://github.com/${{ env.REMOTE_REPOSITORY }}.git "refs/heads/next-*" | sed -e 's|\(.*heads/\)||' | grep -viE 'test|beta' | sort -V | tail -n1)
+          remote_branch='4.7.2'
+          [ -n "$remote_branch" ] && latest_commit_sha=$(gh api "repos/${{ env.REMOTE_REPOSITORY }}/commits/${remote_branch}" --jq .sha)
+          #[ -n "$remote_branch" ] && latest_commit_sha=''
           [ -z "$latest_commit_sha" ] && { echo "*** COULD NOT GET latest_commit_sha FROM remote_branch=$remote_branch ***" ; exit 1; }
           gh api "repos/${{ github.repository }}/releases/latest" --jq .body 2>/dev/null | grep -q "${latest_commit_sha}" && echo "new_commits=false" >> $GITHUB_OUTPUT || echo "new_commits=true" >> $GITHUB_OUTPUT
           echo "remote_branch=${remote_branch}"
@@ -52,8 +53,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.REMOTE_REPOSITORY }}
-          #ref: ${{ needs.check_commits.outputs.remote_branch }}
-          ref: 'a3f20f21404979b18b72feb4a193a2d95665c654'
+          ref: ${{ needs.check_commits.outputs.remote_branch }}
           fetch-depth: 0
 
       - name: Checkout current repository
