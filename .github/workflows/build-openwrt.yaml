@@ -20,7 +20,7 @@ env:
 jobs:
   check_commits:
     name: Check for new commits
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-slim
     outputs:
       remote_branch: ${{ steps.check_commits.outputs.remote_branch }}
       release_prefix: ${{ steps.check_commits.outputs.release_prefix }}
