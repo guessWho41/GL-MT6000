@@ -15,7 +15,7 @@ on:
 env:
   REMOTE_REPOSITORY: pesa1234/openwrt
   CONFIG_FILE: mt6000.config
-  GH_TOKEN: ${{ github.token }}
+  #GH_TOKEN: ${{ github.token }}
 
 jobs:
   check_commits:
@@ -118,7 +118,7 @@ jobs:
         run: |
           cd ./bin
           git init
-          git remote add origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git
+          git remote add origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
           git fetch origin main
           git checkout -B main origin/main
           git config user.name "github-actions"
