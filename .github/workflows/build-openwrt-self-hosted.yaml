@@ -88,7 +88,7 @@ jobs:
             make -j1 V=s
           }
           mkdir -p ./release
-          find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec mv -v {} ./release/ \; ||:
+          find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} ./release/ \; ||:
           mv .config release/full.config ||:
           cd ./release && find -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \; ||:
 
@@ -102,7 +102,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "Add firmware build $(date +'%Y-%m-%d %H:%M:%S')"
-          file_pattern: ./bin/*
+          file_pattern: ./bin
         #run: |
           #export GIT_SSH_COMMAND="ssh -i ~/.ssh/github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
           #cd ./bin
