@@ -48,14 +48,14 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Checkout remote repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.REMOTE_REPOSITORY }}
           ref: ${{ needs.check_commits.outputs.remote_branch }}
           fetch-depth: 0
 
       - name: Checkout current repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: "builder_repo"
 
@@ -68,7 +68,7 @@ jobs:
 
       - name: Setup configuration and custom files
         run: |
-          mv -v builder_repo/${{ env.CONFIG_FILE }} .config 
+          mv -v builder_repo/${{ env.CONFIG_FILE }} .config
           mv -v builder_repo/files ./
           mv -v builder_repo/patches ./
           for file in $(find ./patches -name "*.patch" | sort); do patch -f -p1 -i ${file}; done
@@ -92,11 +92,10 @@ jobs:
           cd ./release && find -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \; ||:
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: gl-mt6000-firmware
-          path: |
-            ./release/*
+          path: ./release/*
 
       - name: Push build to repo
         run: |
