@@ -47,14 +47,14 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || needs.check_commits.outputs.new_commits == 'true'
     runs-on: ubuntu-slim
     steps:
-      - name: Maximize build disk space
-        uses: easimon/maximize-build-space@master
-        with:
-          remove-dotnet: true
-          remove-android: true
-          remove-haskell: true
-          remove-codeql: true
-         # remove-docker-images: true
+      #- name: Maximize build disk space
+        #uses: easimon/maximize-build-space@master
+        #with:
+          #remove-dotnet: true
+          #remove-android: true
+          #remove-haskell: true
+          #remove-codeql: true
+          #remove-docker-images: true
           
       - name: Install dependencies
         run: |
