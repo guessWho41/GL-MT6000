@@ -45,7 +45,7 @@ jobs:
     name: Build OpenWrt
     needs: check_commits
     if: github.event_name == 'workflow_dispatch' || needs.check_commits.outputs.new_commits == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     steps:
       - name: Maximize build disk space
         uses: easimon/maximize-build-space@master
@@ -64,14 +64,14 @@ jobs:
           sudo apt autoremove --purge -y && sudo apt clean -y
 
       - name: Checkout remote repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.REMOTE_REPOSITORY }}
           ref: ${{ needs.check_commits.outputs.remote_branch }}
           fetch-depth: 0
 
       - name: Checkout current repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: "builder_repo"
 
@@ -108,11 +108,10 @@ jobs:
           cd ./release && find -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \; ||:
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: gl-mt6000-firmware
-          path: |
-            ./release/*
+          path: ./release/*
 
       - name: Push build to repo
         run: |
