@@ -15,7 +15,7 @@ on:
 env:
   REMOTE_REPOSITORY: pesa1234/openwrt
   CONFIG_FILE: mt6000.config
-  GH_TOKEN: ${{ github.token }}
+  #GH_TOKEN: ${{ github.token }}
 
 jobs:
   check_commits:
@@ -99,18 +99,22 @@ jobs:
           path: ./release/*
 
       - name: Push build to repo
-        run: |
-          export GIT_SSH_COMMAND="ssh -i ~/.ssh/github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
-          cd ./bin
-          git init
-          git remote add origin git@github.com:${{ github.repository }}.git
-          git fetch origin main
-          git checkout -B main origin/main
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add .
-          git commit -m "Add firmware build $(date +'%Y-%m-%d %H:%M:%S')"
-          git push origin main
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "Add firmware build $(date +'%Y-%m-%d %H:%M:%S')"
+          file_pattern: ./bin/*
+        #run: |
+          #export GIT_SSH_COMMAND="ssh -i ~/.ssh/github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
+          #cd ./bin
+          #git init
+          #git remote add origin git@github.com:${{ github.repository }}.git
+          #git fetch origin main
+          #git checkout -B main origin/main
+          #git config user.name "github-actions"
+          #git config user.email "github-actions@github.com"
+          #git add .
+          #git commit -m "Add firmware build $(date +'%Y-%m-%d %H:%M:%S')"
+          #git push origin main
 
       - name: Create release
         run: |
