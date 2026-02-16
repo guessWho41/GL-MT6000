@@ -129,9 +129,12 @@ jobs:
 
       - name: Create release
         run: |
-          RELEASE_DATE=$(date +%F)
-          gh release delete "${{ needs.check_commits.outputs.release_prefix }}-${RELEASE_DATE}" --cleanup-tag -y --repo "${{ github.repository }}" ||:
-          gh release create "${{ needs.check_commits.outputs.release_prefix }}-${RELEASE_DATE}" --repo "${{ github.repository }}" --latest --notes "### 🔄 Main Repository
+          RELEASE_TAG="${{ needs.check_commits.outputs.release_prefix }}-$(date +%F)"
+          REPO="${{ github.repository }}"
+          if gh release view "$RELEASE_TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release delete "$RELEASE_TAG" --cleanup-tag -y --repo "$REPO"
+          fi
+          gh release create "$RELEASE_TAG" --repo "$REPO" --latest --notes "### 🔄 Main Repository
           - **Repository:** [${{ env.REMOTE_REPOSITORY }}](https://github.com/${{ env.REMOTE_REPOSITORY }})
           - **Branch:** ${{ needs.check_commits.outputs.remote_branch }}
           - **Commit:** ${{ needs.check_commits.outputs.latest_commit_sha }}
@@ -153,7 +156,7 @@ jobs:
           - **UPnP**
           - **Wireguard VPN**
           - **ZRAM**
-          - **Removed:** dropbear, odhcpd and ppp" --title "OpenWrt Custom Release for Flint 2 (${{ needs.check_commits.outputs.release_prefix }}-${RELEASE_DATE})" ./release/*
+          - **Removed:** dropbear, odhcpd and ppp" --title "OpenWrt Custom Release for Flint 2 ($RELEASE_TAG)" ./release/*
 
       - name: Clean up old releases
         run: |
