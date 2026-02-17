@@ -68,7 +68,6 @@ jobs:
 
       - name: Setup configuration and custom files
         run: |
-          rm -frv ./builder_repo/.git ./builder_repo/.github
           mv -v ./builder_repo/${{ env.CONFIG_FILE }} .config
           mv -v ./builder_repo/files ./
           mv -v ./builder_repo/patches ./
