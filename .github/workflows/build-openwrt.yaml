@@ -104,7 +104,7 @@ jobs:
             make -j1 V=s
           }
           mkdir -p ./release
-          find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec mv -v {} ./release/ \; ||:
+          find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} ./release/ \; ||:
           mv .config release/full.config ||:
           cd ./release && find -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \; ||:
 
