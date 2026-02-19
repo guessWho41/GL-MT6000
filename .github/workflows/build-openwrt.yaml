@@ -50,7 +50,9 @@ jobs:
     runs-on: ubuntu-slim
     steps:
       - name: Install LVM2
-        run: sudo apt install lvm2
+        run: |
+          sudo apt update -y
+          sudo apt install lvm2
       
       - name: Maximize build disk space
         uses: easimon/maximize-build-space@master
