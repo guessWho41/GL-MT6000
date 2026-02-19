@@ -53,6 +53,7 @@ jobs:
         run: |
           sudo apt update -y
           sudo apt install lvm2
+          sudo modprobe loop
       
       - name: Maximize build disk space
         uses: easimon/maximize-build-space@master
