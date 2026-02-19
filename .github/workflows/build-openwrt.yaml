@@ -153,7 +153,7 @@ jobs:
           - **Irqbalance with exceptions set by smp_affinity**
           - **MWAN3**
           - **OpenSSH and SFTP with hardened config**
-          - **SQM with mq_cake script**
+          - **SQM**
           - **TCP BBR**
           - **UPnP**
           - **Wireguard VPN**
