@@ -52,7 +52,7 @@ jobs:
       - name: Install LVM2
         run: |
           sudo apt update -y
-          sudo apt install lvm2
+          sudo apt install lvm2 kmod
           sudo modprobe loop
       
       - name: Maximize build disk space
