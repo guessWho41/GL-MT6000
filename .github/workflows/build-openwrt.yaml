@@ -49,19 +49,13 @@ jobs:
     #runs-on: ubuntu-24.04
     runs-on: ubuntu-slim
     steps:
-      - name: Install LVM2
-        run: |
-          sudo apt update -y
-          sudo apt install lvm2 kmod
-          sudo modprobe loop
-      
-      - name: Maximize build disk space
-        uses: easimon/maximize-build-space@master
-        with:
-          remove-dotnet: true
-          remove-android: true
-          remove-haskell: true
-          remove-codeql: true
+      #- name: Maximize build disk space
+        #uses: easimon/maximize-build-space@master
+        #with:
+          #remove-dotnet: true
+          #remove-android: true
+          #remove-haskell: true
+          #remove-codeql: true
           #remove-docker-images: true
           
       - name: Install dependencies
