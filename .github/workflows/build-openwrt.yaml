@@ -144,7 +144,9 @@ jobs:
           ### 📝 Build Information
           - **Target:** [Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
           - **Configuration:** [${{ env.CONFIG_FILE }}](${{ env.CONFIG_FILE }})
+          - **Dropbear replaced with OpenSSH and SFTP with hardened config**
           - **Mbed TLS relaced with OpenSSL**
+          - **uHTTPd replaced with Nginx**
           - **WiFi UCODE scripts**
           - **Ad Block Fast**
           - **Bridger**
@@ -152,13 +154,12 @@ jobs:
           - **DNS Crypt Proxy**
           - **Irqbalance with exceptions set by smp_affinity**
           - **MWAN3**
-          - **OpenSSH and SFTP with hardened config**
           - **SQM**
           - **TCP BBR**
           - **UPnP**
           - **Wireguard VPN**
           - **ZRAM**
-          - **Removed:** dropbear, odhcpd and ppp" --title "OpenWrt Custom Release for Flint 2 ($RELEASE_TAG)" ./release/*
+          - **Removed:** odhcpd and ppp" --title "OpenWrt Custom Release for Flint 2 ($RELEASE_TAG)" ./release/*
 
       - name: Clean up old releases
         run: |
