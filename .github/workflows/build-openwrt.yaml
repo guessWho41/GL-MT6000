@@ -146,7 +146,7 @@ jobs:
           - **Configuration:** [${{ env.CONFIG_FILE }}](${{ env.CONFIG_FILE }})
           - **Dropbear replaced with OpenSSH and SFTP with hardened config**
           - **Mbed TLS relaced with OpenSSL**
-          - **uHTTPd replaced with Nginx**
+          - **uHTTPd replaced with nginx**
           - **WiFi UCODE scripts**
           - **Ad Block Fast**
           - **Bridger**
