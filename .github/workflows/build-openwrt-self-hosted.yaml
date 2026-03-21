@@ -77,7 +77,6 @@ jobs:
 
       - name: Build firmware
         run: |
-          make download -j V=s package/firmware/linux-firmware
           make download -j$(nproc) || {
             echo "Retrying..."
             sleep 30
