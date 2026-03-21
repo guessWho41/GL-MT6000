@@ -45,8 +45,6 @@ jobs:
   build:
     name: Build OpenWrt
     needs: check_commits
-    env:
-      RELEASE_TAG: "$(date +%F)-${{ needs.check_commits.outputs.release_prefix }}-${{ needs.check_commits.outputs.latest_commit_sha }}"
     if: github.event_name == 'workflow_dispatch' || needs.check_commits.outputs.new_commits == 'true'
     runs-on: self-hosted
     steps:
@@ -79,11 +77,13 @@ jobs:
 
       - name: Build firmware
         run: |
+          make download -j V=s package/firmware/linux-firmware
           make download -j$(nproc) || {
             echo "Retrying..."
             sleep 30
             make download -j1 V=s
           }
+          make -j V=s package/firmware/linux-firmware
           make -j$(nproc) || {
             echo "Retrying..."
             sleep 30
@@ -92,7 +92,7 @@ jobs:
           mkdir -p ./release
           find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} ./release/ \; ||:
           mv .config release/full.config ||:
-          cd ./release && find -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \; ||:
+          cd ./release && find -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \; ||:
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6.0.0
@@ -100,6 +100,12 @@ jobs:
           name: gl-mt6000-firmware
           path: ./release/*
 
+      - name: Get release info
+        run: |
+          VERSION=$(find ./bin/targets -type f -iname 'version.buildinfo' -print -quit | xargs -r cat | tr -d '\n')
+          TAG="$(date +%F)_$VERSION_${{ needs.check_commits.outputs.release_prefix }}"
+          echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
+          
       - name: Push build to repo
         run: |
           export GIT_SSH_COMMAND="ssh -i ~/.ssh/github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
