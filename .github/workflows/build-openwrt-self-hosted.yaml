@@ -77,12 +77,11 @@ jobs:
 
       - name: Build firmware
         run: |
-          make download -j$(nproc) || {
-            echo "Retrying..."
-            sleep 30
-            make download -j1 V=s
-          }
-          make -j V=s package/firmware/linux-firmware
+          #make download -j$(nproc) || {
+            #echo "Retrying..."
+            #sleep 30
+          make download -j1 V=s
+          #}
           make -j$(nproc) || {
             echo "Retrying..."
             sleep 30
