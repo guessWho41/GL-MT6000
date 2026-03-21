@@ -46,7 +46,7 @@ jobs:
     name: Build OpenWrt
     needs: check_commits
     env:
-      RELEASE_TAG: "${{ needs.check_commits.outputs.release_prefix }}-$(date +%F)"
+      RELEASE_TAG: "$(date +%F)-${{ needs.check_commits.outputs.release_prefix }}-${{ needs.check_commits.outputs.latest_commit_sha }}"
     if: github.event_name == 'workflow_dispatch' || needs.check_commits.outputs.new_commits == 'true'
     runs-on: self-hosted
     steps:
