@@ -16,6 +16,7 @@ env:
   REMOTE_REPOSITORY: pesa1234/openwrt
   CONFIG_FILE: mt6000.config
   GH_TOKEN: ${{ github.token }}
+  REPO: "${{ github.repository }}"
 
 jobs:
   check_commits:
@@ -33,7 +34,7 @@ jobs:
           remote_branch=$(git ls-remote https://github.com/${{ env.REMOTE_REPOSITORY }}.git "refs/heads/next-*" | sed -e 's|\(.*heads/\)||' | grep -viE 'test|beta' | sort -V | tail -n1)
           [ -n "$remote_branch" ] && latest_commit_sha=$(gh api "repos/${{ env.REMOTE_REPOSITORY }}/commits/${remote_branch}" --jq .sha)
           [ -z "$latest_commit_sha" ] && { echo "*** COULD NOT GET latest_commit_sha FROM remote_branch=$remote_branch ***" ; exit 1; }
-          gh api "repos/${{ github.repository }}/releases/latest" --jq .body 2>/dev/null | grep -q "${latest_commit_sha}" && echo "new_commits=false" >> $GITHUB_OUTPUT || echo "new_commits=true" >> $GITHUB_OUTPUT
+          gh api "repos/$REPO/releases/latest" --jq .body 2>/dev/null | grep -q "${latest_commit_sha}" && echo "new_commits=false" >> $GITHUB_OUTPUT || echo "new_commits=true" >> $GITHUB_OUTPUT
           echo "remote_branch=${remote_branch}"
           echo "release_prefix=${remote_branch%.rss*}"
           echo "latest_commit_sha=$latest_commit_sha"
@@ -102,7 +103,7 @@ jobs:
           export GIT_SSH_COMMAND="ssh -i ~/.ssh/github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
           cd ./bin
           git init
-          git remote add origin git@github.com:${{ github.repository }}.git
+          git remote add origin git@github.com:$REPO.git
           git fetch origin main
           git checkout -B main origin/main
           git config user.name "github-actions"
@@ -114,7 +115,6 @@ jobs:
       - name: Create release
         run: |
           RELEASE_TAG="${{ needs.check_commits.outputs.release_prefix }}-$(date +%F)"
-          REPO="${{ github.repository }}"
           if gh release view "$RELEASE_TAG" --repo "$REPO" >/dev/null 2>&1; then
             gh release delete "$RELEASE_TAG" --cleanup-tag -y --repo "$REPO"
           fi
@@ -145,6 +145,6 @@ jobs:
 
       - name: Clean up old releases
         run: |
-          gh api repos/${{ github.repository }}/releases --paginate --jq '.[10:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
-            gh api -X DELETE "repos/${{ github.repository }}/releases/$id" && gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/$tag" 2>/dev/null ||:
+          gh api repos/$REPO/releases --paginate --jq '.[10:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
+            gh api -X DELETE "repos/$REPO/releases/$id" && gh api -X DELETE "repos/$REPO/git/refs/tags/$tag" 2>/dev/null ||:
           done
