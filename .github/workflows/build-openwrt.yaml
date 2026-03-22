@@ -124,10 +124,9 @@ jobs:
           
       - name: Push build to repo
         run: |
-          export GIT_SSH_COMMAND="ssh -i ~/.ssh/github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
           cd ./bin
           git init
-          git remote add origin git@github.com:$TARGET_REPOSITORY.git
+          git remote add origin https://x-access-token:${{ github.token }}@github.com/$TARGET_REPOSITORY.git
           git fetch origin main
           git checkout -B main origin/main
           git config user.name "github-actions"
