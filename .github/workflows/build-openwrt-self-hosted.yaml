@@ -101,7 +101,7 @@ jobs:
       - name: Get release info
         run: |
           VERSION=$(find ./bin -type f -iname 'version.buildinfo' -print -quit | xargs -r cat | tr -d '\n')
-          TAG="$(date +%F)_$VERSION_${{ needs.check_commits.outputs.release_prefix }}"
+          TAG="$(date +%F)_${VERSION}_${{ needs.check_commits.outputs.release_prefix }}"
           echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
           
       - name: Push build to repo
