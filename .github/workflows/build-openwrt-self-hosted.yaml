@@ -103,7 +103,12 @@ jobs:
           VERSION=$(find ./bin -type f -iname 'version.buildinfo' -print -quit | xargs -r cat | tr -d '\n')
           TAG="$(date +%F)_${VERSION}_${{ needs.check_commits.outputs.remote_branch }}"
           echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
-          
+
+      - name: Configure Git identity
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
       - name: Push build to repo
         run: |
           export GIT_SSH_COMMAND="ssh -i ~/.ssh/github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
@@ -152,4 +157,10 @@ jobs:
         run: |
           gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '.[5:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id" && gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null ||:
+            if [ -d "$tag" ]; then
+              rm -rf "$tag"
+              git add -A
+              git commit -m "Delete $tag directory"
+              git push
+            fi
           done
