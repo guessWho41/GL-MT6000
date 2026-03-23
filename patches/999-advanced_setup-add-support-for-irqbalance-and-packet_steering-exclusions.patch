@@ -402,16 +402,7 @@
  			#TCP Binding
  			iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  			ip6tables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -712,7 +734,7 @@
- {
- 	FILE="/sys/kernel/debug/ieee80211/phy0/mt76/vow"
- 	if [ -e "$FILE" ]; then
--		logger -s "smp_affinity: HW-ATF available"
-+		log_msg "[smp_affinity] HW-ATF is available"
- 		atf=$(uci get advanced.@defaults[0].atf_enable 2>/dev/null || echo "x")
- 		hwatf=$(uci get advanced.@defaults[0].hw_atf_enable 2>/dev/null || echo "x")
- 		if [ $atf == 1 ]; then
-@@ -739,7 +761,7 @@
+@@ -779,7 +801,7 @@
  		if [ $mtkutil_enable == 1 ]; then
  			if [ $hqos_enable == 1 ]; then
  				/sbin/mtkhnat
@@ -420,7 +411,7 @@
  			fi
  		fi
  	fi
-@@ -750,19 +772,19 @@
+@@ -790,19 +812,19 @@
  {
  	usb2=$(uci get advanced.@defaults[0].usb_2 2>/dev/null || echo "x")
  	if [ $usb2 == 1 ]; then
@@ -444,7 +435,7 @@
  		echo 0 > /sys/devices/platform/regulator-usb-vbus/usb_vbus_enable
  	fi
  	
-@@ -771,62 +793,76 @@
+@@ -811,62 +833,76 @@
  	status2=$(cat "$USB2_PATH")
  	statuspower=$(cat "$USBPOWER_PATH")
  	if [ "$status2" -eq 1 ]; then
@@ -492,8 +483,8 @@
 -    logger -t advanced_setup "advanced_setup finished"
 +	smp_mt76
 +	enable_HQoS
-+	hw_atf_setup
 +	usb_setup
++	hw_atf_setup
 +    log_msg "Finished"
  }
  
@@ -528,8 +519,8 @@
 +			clean_irqbalance_config
 +			smp_mt76
 +			enable_HQoS
-+			hw_atf_setup
 +			usb_setup
++			hw_atf_setup
              ;;
      esac
 +	log_msg "Finished"
