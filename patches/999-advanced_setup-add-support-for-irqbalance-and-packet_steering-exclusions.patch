@@ -402,6 +402,30 @@
  			#TCP Binding
  			iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  			ip6tables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
+@@ -716,7 +738,7 @@
+ 	hwatf=$(uci get advanced.@defaults[0].hw_atf_enable 2>/dev/null || echo "0")
+ 
+ 	if [ "$atf" != "1" ] && [ "$hwatf" = "1" ]; then
+-		logger -t advanced_setup "HW-ATF requires ATF; forcing hw_atf_enable=0"
++		log_msg "[HW-ATF] HW-ATF requires ATF. Disabling HW-ATF"
+ 		uci set advanced.@defaults[0].hw_atf_enable='0'
+ 		uci commit advanced
+ 		hwatf=0
+@@ -749,12 +771,12 @@
+ 
+ 		if [ "$old_content" != "$new_line" ]; then
+ 			printf '%s\n' "$new_line" > "$MODULE_FILE"
+-			logger -t advanced_setup "updated $MODULE_FILE to '$new_line'; reboot required for Airtime Fairness mode change"
++			log_msg "[HW-ATF] $MODULE_FILE updated with '$new_line'. Reboot is required to change Airtime Fairness mode"
+ 		fi
+ 	fi
+ 
+ 	if [ -e "$FILE" ]; then
+-		logger -s "smp_affinity: HW-ATF available"
++		log_msg "[HW-ATF] HW-ATF is available"
+ 		if [ "$atf" = "1" ]; then
+ 			echo 'vow_atf_en=1' > /sys/kernel/debug/ieee80211/phy0/mt76/vow
+ 		else
 @@ -779,7 +801,7 @@
  		if [ $mtkutil_enable == 1 ]; then
  			if [ $hqos_enable == 1 ]; then
