@@ -1,6 +1,6 @@
 --- a/target/linux/mediatek/filogic/base-files/etc/init.d/advanced_setup
 +++ b/target/linux/mediatek/filogic/base-files/etc/init.d/advanced_setup
-@@ -1,10 +1,18 @@
+@@ -1,10 +1,19 @@
  #!/bin/sh /etc/rc.common
  
  START=99
@@ -16,10 +16,11 @@
 +        echo "$msg"
 +    fi
 +}
++
+ extra_command "reprobe_mt7915e" "Reprobe mt7915e to apply updated WED/ATF module options"
  
- smp_mt76() {
- OPTIMIZED_FOR="$1"
-@@ -12,8 +20,6 @@
+ 
+@@ -14,8 +23,6 @@
  NUM_OF_CPU=0; for i in $CPU_LIST; do NUM_OF_CPU=`expr $NUM_OF_CPU + 1`; done;
  DEFAULT_RPS=0
  
@@ -28,7 +29,7 @@
  RPS_IF_LIST=""
  NUM_WIFI_CARD=0
  WIFI_RADIO1=0
-@@ -26,7 +32,7 @@
+@@ -28,7 +35,7 @@
  get_if_info()
  {
  	# try to get all wifi and eth net interface.
@@ -37,7 +38,7 @@
  	NET_IF_LIST=`ls /sys/class/net`
  	for vif in $NET_IF_LIST;
  	do
-@@ -36,15 +42,15 @@
+@@ -38,15 +45,15 @@
  			RPS_IF_LIST="$RPS_IF_LIST $vif"
  		fi
  	done;
@@ -56,7 +57,7 @@
  		if [[ $v == *"wmac"* ]]; then
  			WIFI_RADIO1=1
  		fi
-@@ -67,17 +73,17 @@
+@@ -69,17 +76,17 @@
  	do
  		if [[ -f "/sys/module/$v/parameters/wed_enable" ]]; then
  			WED_ENABLE_LIST=`cat /sys/module/$v/parameters/wed_enable`
@@ -80,7 +81,7 @@
  }
  
  # $1: CPU#
-@@ -94,7 +100,7 @@
+@@ -96,7 +103,7 @@
  {
  	eval oval=\$CPU${1}_RPS
  	eval CPU${1}_RPS=\"\$CPU${1}_RPS $2\"
@@ -89,7 +90,7 @@
  }
  
  MT7988()
-@@ -115,7 +121,7 @@
+@@ -117,7 +124,7 @@
  	wifi2_irq_pcie1=
  
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
@@ -98,7 +99,7 @@
  		#TCP Binding
  		iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  		iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -131,9 +137,6 @@
+@@ -133,9 +140,6 @@
  		iptables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  		ip6tables -D FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  		ip6tables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
@@ -108,7 +109,7 @@
  	fi
  
  	for vif in $NET_IF_LIST;
-@@ -142,7 +145,7 @@
+@@ -144,7 +148,7 @@
  			WIFI_IF_LIST="$WIFI_IF_LIST $vif"
  		fi
  	done;
@@ -117,7 +118,7 @@
  	# Please update the CPU binding in each cases.
  	# CPU#_AFFINITY="add binding irq number here"
  	# CPU#_RPS="add binding interface name here"
-@@ -168,10 +171,10 @@
+@@ -170,10 +174,10 @@
  		CPU2_RPS=""
  		CPU3_RPS=""
  	fi
@@ -132,7 +133,7 @@
  }
  
  MT7986()
-@@ -191,7 +194,7 @@
+@@ -193,7 +197,7 @@
  	wifi3_irq=
  
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
@@ -141,7 +142,7 @@
  		#TCP Binding
  		iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  		iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -221,7 +224,6 @@
+@@ -223,7 +227,6 @@
  		#	wifi3_irq=239
  		#fi
  	else
@@ -149,7 +150,7 @@
  		#AX6000 AX7800 - SOC
  		if [[ "$WIFI_RADIO1" -eq "1" ]]; then
  			wifi1_irq=245
-@@ -242,7 +244,7 @@
+@@ -244,7 +247,7 @@
  			WIFI_IF_LIST="$WIFI_IF_LIST $vif"
  		fi
  	done;
@@ -158,7 +159,7 @@
  	# Please update the CPU binding in each cases.
  	# CPU#_AFFINITY="add binding irq number here"
  	# CPU#_RPS="add binding interface name here"
-@@ -268,10 +270,10 @@
+@@ -270,10 +273,10 @@
  		CPU2_RPS="$WIFI_IF_LIST"
  		CPU3_RPS="$WIFI_IF_LIST"
  	fi
@@ -173,7 +174,7 @@
  }
  
  gl_mt6000()
-@@ -356,9 +358,9 @@
+@@ -358,9 +361,9 @@
  
  	BRIDGE_MEMBERS=$(echo $BRIDGE_MEMBERS | tr ' ' '\n' | sort -u | tr '\n' ' ')
  	
@@ -186,7 +187,7 @@
  	
  	# Please update the CPU binding in each cases.
  	# CPU#_AFFINITY="add binding irq number here"
-@@ -400,7 +402,7 @@
+@@ -402,7 +405,7 @@
  
  	#AX3000
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
@@ -195,7 +196,7 @@
  		#TCP Binding
  		iptables -D FORWARD -p tcp -m conntrack --ctstate	\
  				RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -447,8 +449,8 @@
+@@ -449,8 +452,8 @@
  		CPU0_RPS="$RPS_IF_LIST"
  		CPU1_RPS="$RPS_IF_LIST"
  	fi
@@ -206,7 +207,7 @@
  }
  
  gl_mt3000()
-@@ -492,8 +494,8 @@
+@@ -494,8 +497,8 @@
  		CPU0_RPS="$RPS_IF_LIST"
  		CPU1_RPS="$RPS_IF_LIST"
  	fi
@@ -217,7 +218,7 @@
  }
  
  MT7622()
-@@ -538,36 +540,36 @@
+@@ -540,36 +543,36 @@
  		CPU1_RPS="$RPS_IF_LIST"
  	fi
  
@@ -266,7 +267,7 @@
  		MT7988 $num_of_wifi
  	fi
  }
-@@ -589,25 +591,25 @@
+@@ -591,25 +594,25 @@
  
  set_rps_cpu_bitmap()
  {
@@ -296,7 +297,7 @@
  		done
  		num=`expr $num + 1`
  	done
-@@ -616,7 +618,7 @@
+@@ -618,7 +621,7 @@
  # $1: The default rps value. If rps of the interface is not setup, set $1 to it
  set_rps_cpus()
  {
@@ -305,20 +306,16 @@
  	for i in $RPS_IF_LIST; do
  		var=${VAR_PREFIX}_${i//'-'/_}
  		var=${var//'.'/_}
-@@ -624,10 +626,10 @@
- 		if [ -d /sys/class/net/$i ]; then
- 			if [ ! -z $cpu_map ]; then
- 				cpu_map=`printf '%x' $cpu_map`
--				logger -s "smp_affinity: echo $cpu_map > /sys/class/net/$i/queues/rx-0/rps_cpus"
-+				log_msg "[smp_affinity] echo $cpu_map > /sys/class/net/$i/queues/rx-0/rps_cpus"
- 				echo $cpu_map > /sys/class/net/$i/queues/rx-0/rps_cpus
- 			elif [ ! -z $1 ]; then
--				logger -s "smp_affinity: echo $1 > /sys/class/net/$i/queues/rx-0/rps_cpus"
-+				log_msg "[smp_affinity] echo $1 > /sys/class/net/$i/queues/rx-0/rps_cpus"
- 				echo $1 > /sys/class/net/$i/queues/rx-0/rps_cpus
+@@ -633,7 +636,7 @@
+ 			if [ -n "$cpu_map" ]; then
+ 				for rxq in /sys/class/net/$i/queues/rx-*; do
+ 					[ -d "$rxq" ] || continue
+-					logger -s "smp_affinity: echo $cpu_map > $rxq/rps_cpus"
++					log_msg "[smp_affinity] echo $cpu_map > $rxq/rps_cpus"
+ 					echo $cpu_map > "$rxq/rps_cpus"
+ 				done
  			fi
- 		fi
-@@ -636,27 +638,47 @@
+@@ -643,27 +646,47 @@
  
  set_smp_affinity()
  {
@@ -371,7 +368,7 @@
  VAR_PREFIX="autogen"
  get_if_info
  setup_model
-@@ -669,10 +691,10 @@
+@@ -676,10 +699,10 @@
  		set_rps_cpu_bitmap
  		set_rps_cpus $DEFAULT_RPS
  	else
@@ -384,7 +381,7 @@
  fi
  
  
-@@ -684,7 +706,7 @@
+@@ -691,7 +714,7 @@
  {
  	mtk_offloading_enable=$(uci get advanced.@defaults[0].mtk_offloading_enable 2>/dev/null || echo "x")
  	if [ "$mtk_offloading_enable" == "1" ]; then
@@ -393,7 +390,7 @@
  			#TCP Binding
  			iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  			ip6tables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -695,7 +717,7 @@
+@@ -702,7 +725,7 @@
  			iptables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  			ip6tables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  	elif [ "$mtk_offloading_enable" == 0 ]; then
@@ -402,7 +399,59 @@
  			#TCP Binding
  			iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  			ip6tables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -716,7 +738,7 @@
+@@ -746,7 +769,7 @@
+ {
+ 	local reprobe_ok=0
+ 
+-	logger -t advanced_setup "reprobing mt7915e to apply module option changes"
++	log_msg "[mt7915e] Reloading module to apply changes"
+ 
+ 	/sbin/wifi down >/dev/null 2>&1
+ 	sleep 2
+@@ -754,7 +777,7 @@
+ 	if grep -q '^mt7915e ' /proc/modules 2>/dev/null; then
+ 		if ! /sbin/modprobe -r mt7915e >/dev/null 2>&1 && \
+ 		   ! /sbin/rmmod mt7915e >/dev/null 2>&1; then
+-			logger -t advanced_setup "failed to unload mt7915e; attempting to restore Wi-Fi"
++			log_msg "[mt7915e] Failed to unload module. Attempting to re-enable Wi-Fi"
+ 			/sbin/wifi up >/dev/null 2>&1
+ 			return 1
+ 		fi
+@@ -763,13 +786,13 @@
+ 	sleep 2
+ 
+ 	if ! load_mt7915e_from_modules_file >/dev/null 2>&1; then
+-		logger -t advanced_setup "failed to reload mt7915e from /etc/modules.d/mt7915e"
++		log_msg "[mt7915e] Failed to reload module from /etc/modules.d/mt7915e"
+ 	else
+ 		reprobe_ok=1
+ 	fi
+ 
+ 	if [ "$reprobe_ok" -eq 1 ] && ! wait_for_mt7915e_runtime; then
+-		logger -t advanced_setup "mt7915e runtime files not ready after reprobe"
++		log_msg "[mt7915e] Module runtime files not ready after reload"
+ 		reprobe_ok=0
+ 	fi
+ 
+@@ -777,7 +800,7 @@
+ 	sleep 3
+ 
+ 	if [ "$reprobe_ok" -ne 1 ]; then
+-		logger -t advanced_setup "mt7915e reprobe incomplete; Wi-Fi bring-up attempted as fallback"
++		log_msg "[mt7915e] Module relode incomplete. Attempt to re-enable Wi-Fi was made"
+ 		return 1
+ 	fi
+ 
+@@ -786,7 +809,7 @@
+ 	usb_setup
+ 	hw_atf_setup
+ 
+-	logger -t advanced_setup "mt7915e reprobe completed"
++	log_msg "[mt7915e] Module reload completed"
+ 	return 0
+ }
+ 
+@@ -797,7 +820,7 @@
  	hwatf=$(uci get advanced.@defaults[0].hw_atf_enable 2>/dev/null || echo "0")
  
  	if [ "$atf" != "1" ] && [ "$hwatf" = "1" ]; then
@@ -411,14 +460,17 @@
  		uci set advanced.@defaults[0].hw_atf_enable='0'
  		uci commit advanced
  		hwatf=0
-@@ -749,12 +771,12 @@
+@@ -830,7 +853,7 @@
  
  		if [ "$old_content" != "$new_line" ]; then
  			printf '%s\n' "$new_line" > "$MODULE_FILE"
--			logger -t advanced_setup "updated $MODULE_FILE to '$new_line'; reboot required for Airtime Fairness mode change"
+-			logger -t advanced_setup "updated $MODULE_FILE to '$new_line'; mt7915e reprobe required for Airtime Fairness mode change"
 +			log_msg "[HW-ATF] $MODULE_FILE updated with '$new_line'. Reboot is required to change Airtime Fairness mode"
+ 			echo "1"
+ 			return 0
  		fi
- 	fi
+@@ -845,7 +868,7 @@
+ 	sync_mt7915e_airtime_module_options >/dev/null
  
  	if [ -e "$FILE" ]; then
 -		logger -s "smp_affinity: HW-ATF available"
@@ -426,7 +478,7 @@
  		if [ "$atf" = "1" ]; then
  			echo 'vow_atf_en=1' > /sys/kernel/debug/ieee80211/phy0/mt76/vow
  		else
-@@ -779,7 +801,7 @@
+@@ -870,7 +893,7 @@
  		if [ $mtkutil_enable == 1 ]; then
  			if [ $hqos_enable == 1 ]; then
  				/sbin/mtkhnat
@@ -435,7 +487,7 @@
  			fi
  		fi
  	fi
-@@ -790,19 +812,19 @@
+@@ -881,19 +904,19 @@
  {
  	usb2=$(uci get advanced.@defaults[0].usb_2 2>/dev/null || echo "x")
  	if [ $usb2 == 1 ]; then
@@ -459,7 +511,7 @@
  		echo 0 > /sys/devices/platform/regulator-usb-vbus/usb_vbus_enable
  	fi
  	
-@@ -811,62 +833,76 @@
+@@ -902,39 +925,51 @@
  	status2=$(cat "$USB2_PATH")
  	statuspower=$(cat "$USBPOWER_PATH")
  	if [ "$status2" -eq 1 ]; then
@@ -488,7 +540,7 @@
 +}
 +
  service_triggers() {
-     procd_add_reload_trigger advanced
+     procd_add_reload_trigger advanced network
  }
  
  start_service() {
@@ -502,12 +554,11 @@
  	fi
 -		smp_mt76
 -		enable_HQoS
--		usb_setup
--		hw_atf_setup
--    logger -t advanced_setup "advanced_setup finished"
 +	smp_mt76
 +	enable_HQoS
-+	usb_setup
+ 	usb_setup
+-		hw_atf_setup
+-    logger -t advanced_setup "advanced_setup finished"
 +	hw_atf_setup
 +    log_msg "Finished"
  }
@@ -518,13 +569,22 @@
          atf)
 -			logger -t advanced_setup "advanced_setup atf"
 +			log_msg "Reloading ATF settings"
-             hw_atf_setup
+ 			if [ "$(sync_mt7915e_airtime_module_options)" = "1" ]; then
+ 				reprobe_mt7915e
+ 			else
+@@ -942,30 +977,32 @@
+ 			fi
              ;;
          usb)
 -			logger -t advanced_setup "advanced_setup usb"
 +			log_msg "Reloading USB settings"
              usb_setup
              ;;
+         wed)
+-			logger -t advanced_setup "advanced_setup wed"
++			log_msg "Reloading WED"
+ 			reprobe_mt7915e
+ 			;;
          *)
 -			logger -t advanced_setup "advanced_setup generic"
 +			log_msg "Reloading all settings"
