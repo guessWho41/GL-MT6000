@@ -117,8 +117,6 @@ jobs:
           git remote add origin git@github.com:$TARGET_REPOSITORY.git
           git fetch origin main
           git checkout -B main origin/main
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
           git add .
           git commit -m "$RELEASE_TAG"
           git push origin main
@@ -157,10 +155,12 @@ jobs:
         run: |
           gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '.[5:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id" && gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null ||:
-            if [ -d "$tag" ]; then
+            if [ -d "builder_repo/$tag" ]; then
+              cd builder_repo
               rm -rf "$tag"
               git add -A
-              git commit -m "Delete $tag directory"
+              git commit -m "Delete $tag directory" || echo "Nothing to commit"
               git push
+              cd ..
             fi
           done
