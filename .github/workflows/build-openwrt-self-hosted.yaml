@@ -69,9 +69,9 @@ jobs:
 
       - name: Setup configuration and custom files
         run: |
-          mv -v ./builder_repo/${{ env.CONFIG_FILE }} .config
-          mv -v ./builder_repo/files ./
-          mv -v ./builder_repo/patches ./
+          cp -v ./builder_repo/${{ env.CONFIG_FILE }} .config
+          cp -rv ./builder_repo/files ./
+          cp -rv ./builder_repo/patches ./
           for file in $(find ./patches -name "*.patch" | sort); do patch -f -p1 -i ${file}; done
           make defconfig
 
@@ -89,7 +89,7 @@ jobs:
           }
           mkdir -p ./release
           find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} ./release/ \; ||:
-          mv .config release/full.config ||:
+          mv -v .config release/full.config ||:
           cd ./release && find -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \; ||:
 
       - name: Upload artifacts
@@ -112,7 +112,7 @@ jobs:
       - name: Commit build artifacts
         run: |
           mkdir -p builder_repo/$RELEASE_TAG
-          mv ./bin/* builder_repo/$RELEASE_TAG/ ||:
+          mv -v ./bin/* builder_repo/$RELEASE_TAG/ ||:
           cd builder_repo
           git add .
           git diff --cached --quiet || git commit -m "$RELEASE_TAG"
