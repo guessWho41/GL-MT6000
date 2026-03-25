@@ -158,8 +158,8 @@ jobs:
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id" && gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null ||:
             if [ -d "$tag" ]; then
               rm -rf "$tag"
+              git add -A
+              git diff --cached --quiet || git commit -m "Delete $tag directory"
+              git push origin main
             fi
-            git add -A
-            git diff --cached --quiet || git commit -m "Delete $tag directory"
-            git push origin main
           done
