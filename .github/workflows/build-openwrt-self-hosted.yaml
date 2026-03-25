@@ -151,16 +151,15 @@ jobs:
 
       - name: Clean up old releases
         run: |
+          cd builder_repo
+          git fetch origin main
+          git reset --hard origin/main
           gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '.[5:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id" && gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null ||:
-            if [ -d "builder_repo/$tag" ]; then
-              cd builder_repo
-              git fetch origin main
-              git reset --hard origin/main
+            if [ -d "$tag" ]; then
               rm -rf "$tag"
-              git add -A
-              git diff --cached --quiet || git commit -m "Delete $tag directory"
-              git push origin main
-              cd ..
             fi
+            git add -A
+            git diff --cached --quiet || git commit -m "Delete $tag directory"
+            git push origin main
           done
