@@ -109,17 +109,15 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-      - name: Push build to repo
+      - name: Commit build artifacts
         run: |
-          export GIT_SSH_COMMAND="ssh -i ~/.ssh/github -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
-          cd ./bin
-          git init
-          git remote add origin git@github.com:$TARGET_REPOSITORY.git
-          git fetch origin main
-          git checkout -B main origin/main
+          mkdir -p builder_repo/$RELEASE_TAG
+          mv ./bin/* builder_repo/$RELEASE_TAG/ ||:
+          cd builder_repo
           git add .
-          git commit -m "$RELEASE_TAG"
+          git diff --cached --quiet || git commit -m "$RELEASE_TAG"
           git push origin main
+          cd ..
 
       - name: Create release
         run: |
@@ -163,5 +161,6 @@ jobs:
               git add -A
               git diff --cached --quiet || git commit -m "Delete $tag directory"
               git push origin main
+              cd ..
             fi
           done
