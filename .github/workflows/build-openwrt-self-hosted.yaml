@@ -157,10 +157,11 @@ jobs:
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id" && gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null ||:
             if [ -d "builder_repo/$tag" ]; then
               cd builder_repo
+              git fetch origin main
+              git reset --hard origin/main
               rm -rf "$tag"
               git add -A
-              git commit -m "Delete $tag directory" || echo "Nothing to commit"
-              git push
-              cd ..
+              git diff --cached --quiet || git commit -m "Delete $tag directory"
+              git push origin main
             fi
           done
