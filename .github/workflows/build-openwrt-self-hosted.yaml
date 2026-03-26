@@ -111,9 +111,8 @@ jobs:
 
       - name: Commit build artifacts
         run: |
-          mkdir -p builder_repo/$RELEASE_TAG
-          mv -v ./bin/* builder_repo/$RELEASE_TAG/ ||:
-          cd builder_repo
+          mv -v ./bin/* ./builder_repo/ ||:
+          cd ./builder_repo
           git add .
           git diff --cached --quiet || git commit -m "$RELEASE_TAG"
           git push origin main
@@ -151,7 +150,7 @@ jobs:
 
       - name: Clean up old releases
         run: |
-          cd builder_repo
+          cd ./builder_repo
           git fetch origin main
           git reset --hard origin/main
           gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '.[5:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
