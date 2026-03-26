@@ -87,9 +87,9 @@ jobs:
 
       - name: Setup configuration and custom files
         run: |
-          mv -v ./builder_repo/${{ env.CONFIG_FILE }} .config
-          mv -v ./builder_repo/files ./
-          mv -v ./builder_repo/patches ./
+          cp -v ./builder_repo/${{ env.CONFIG_FILE }} .config
+          cp -rv ./builder_repo/files ./
+          cp -rv ./builder_repo/patches ./
           for file in $(find ./patches -name "*.patch" | sort); do patch -f -p1 -i ${file}; done
           make defconfig
 
@@ -107,7 +107,7 @@ jobs:
           }
           mkdir -p ./release
           find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} ./release/ \; ||:
-          mv .config release/full.config ||:
+          mv -v .config release/full.config ||:
           cd ./release && find -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \; ||:
 
       - name: Upload artifacts
@@ -127,18 +127,15 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-      - name: Push build to repo
+      - name: Commit build artifacts
         run: |
-          cd ./bin
-          git init
-          git remote add origin https://x-access-token:${{ github.token }}@github.com/$TARGET_REPOSITORY.git
-          git fetch origin main
-          git checkout -B main origin/main
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          mkdir -p builder_repo/$RELEASE_TAG
+          mv -v ./bin/* builder_repo/$RELEASE_TAG/ ||:
+          cd builder_repo
           git add .
-          git commit -m "$RELEASE_TAG"
+          git diff --cached --quiet || git commit -m "$RELEASE_TAG"
           git push origin main
+          cd ..
 
       - name: Create release
         run: |
@@ -172,12 +169,15 @@ jobs:
 
       - name: Clean up old releases
         run: |
+          cd builder_repo
+          git fetch origin main
+          git reset --hard origin/main
           gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '.[5:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id" && gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null ||:
             if [ -d "$tag" ]; then
-              rm -rf "$tag"
+              rm -rfv "$tag"
               git add -A
-              git commit -m "Delete $tag directory"
-              git push
+              git diff --cached --quiet || git commit -m "Delete $tag directory"
+              git push origin main
             fi
           done
