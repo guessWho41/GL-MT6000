@@ -144,6 +144,7 @@ jobs:
           - **SQM**
           - **TCP BBR**
           - **UPnP**
+          - **Usteer**
           - **Wireguard VPN**
           - **ZRAM**
           - **Removed:** odhcpd and ppp" --title "OpenWrt Custom Release for Flint 2 ($RELEASE_TAG)" ./release/*
