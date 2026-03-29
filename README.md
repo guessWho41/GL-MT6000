@@ -14,6 +14,7 @@ Repository for building [Pesa1234's](https://forum.openwrt.org/u/pesa1234) [GL.i
 - MWAN3
 - TCP BBR
 - UPnP
+- Usteer
 - Wireguard
 - ZRAM
 - Removed: odhcpd and ppp
