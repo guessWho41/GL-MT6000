@@ -85,7 +85,7 @@ jobs:
           make -j$(nproc) || {
             echo "Retrying..."
             sleep 30
-            make -j1 V=s
+            make -j1 # V=s
           }
           mkdir -p ./release
           find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} ./release/ \; ||:
