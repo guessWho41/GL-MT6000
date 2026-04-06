@@ -134,7 +134,7 @@ jobs:
           - **Dropbear replaced with OpenSSH and SFTP with hardened config**
           - **Mbed TLS relaced with OpenSSL**
           - **uHTTPd replaced with nginx**
-          - **WiFi UCODE scripts**
+          - **Wi-Fi UCODE scripts**
           - **Ad Block Fast**
           - **Bridger**
           - **DDNS**
