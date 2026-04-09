@@ -87,7 +87,7 @@ jobs:
 
       - name: Setup configuration and custom files
         run: |
-          cp -v ./builder_repo/${{ env.CONFIG_FILE }} .config
+          cp -v ./builder_repo/config/${{ env.CONFIG_FILE }} .config
           cp -rv ./builder_repo/files ./
           cp -rv ./builder_repo/patches ./
           for file in $(find ./patches -name "*.patch" | sort); do patch -f -p1 -i ${file}; done
