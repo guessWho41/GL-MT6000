@@ -5,9 +5,15 @@
 RULE_COMMENT="WireGuard VPN NPT6"
 
 WG_IF=$(uci -q show network | grep "proto='wireguard'" | cut -d. -f2 | head -n 1)
-if [ -z "$WG_IF" ] || { [ "$INTERFACE" != "wan6" ] && [ "$INTERFACE" != "$WG_IF" ]; }; then
+network_find_wan6 WAN6_IF
+if [ -z "$WG_IF" ] || [ -z "$WAN6_IF" ] || { [ "$INTERFACE" != "$WAN6_IF" ] && [ "$INTERFACE" != "$WG_IF" ]; }; then
     exit 0
 fi
+
+HANDLE=$(nft -a list chain inet fw4 srcnat | grep -F "comment \"$RULE_COMMENT\"" | awk '{print $NF}')
+for H in $HANDLE; do
+    nft delete rule inet fw4 srcnat handle "$H"
+done
 
 WG_ADDR=$(uci -q get network."$WG_IF".addresses | tr ' ' '\n' | grep ':' | head -n 1)
 if [ -n "$WG_ADDR" ]; then
@@ -19,16 +25,9 @@ else
     exit 0
 fi
 
-HANDLE=$(nft -a list chain inet fw4 srcnat | grep -F "comment \"$RULE_COMMENT\"" | awk '{print $NF}')
-for H in $HANDLE; do
-    nft delete rule inet fw4 srcnat handle "$H"
-done
-
 if [ "$ACTION" = "ifup" ] || [ "$ACTION" = "ifupdate" ]; then
     network_flush_cache
-    network_find_wan6 WAN_IF
-
-    if [ -n "$WAN_IF" ] && network_get_device WAN_DEV "$WAN_IF" && network_get_prefix6 WAN_PFX "$WAN_IF"; then
+    if network_get_device WAN_DEV "$WAN6_IF" && network_get_prefix6 WAN_PFX "$WAN6_IF"; then
         if [ -n "$WAN_PFX" ]; then
             nft add rule inet fw4 srcnat \
             oifname "${WAN_DEV}" snat ip6 prefix to ip6 \
