@@ -6,7 +6,7 @@ RULE_COMMENT="WireGuard VPN NPT6"
 
 WG_IF=$(uci -q show network | grep "proto='wireguard'" | cut -d. -f2 | head -n 1)
 network_find_wan6 WAN6_IF
-if [ -z "$WG_IF" ] || [ -z "$WAN6_IF" ] || { [ "$INTERFACE" != "$WAN6_IF" ] && [ "$INTERFACE" != "$WG_IF" ]; }; then
+if [ "$INTERFACE" != "$WG_IF" ] && [ "$INTERFACE" != "$WAN6_IF" ] && [ "${INTERFACE#wan}" = "$INTERFACE" ]; then
     exit 0
 fi
 
@@ -14,6 +14,10 @@ HANDLE=$(nft -a list chain inet fw4 srcnat | grep -F "comment \"$RULE_COMMENT\""
 for H in $HANDLE; do
     nft delete rule inet fw4 srcnat handle "$H"
 done
+
+if [ -z "$WG_IF" ] || [ -z "$WAN6_IF" ]; then
+    exit 0
+fi
 
 WG_ADDR=$(uci -q get network."$WG_IF".addresses | tr ' ' '\n' | grep ':' | head -n 1)
 if [ -n "$WG_ADDR" ]; then
