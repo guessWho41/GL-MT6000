@@ -15,6 +15,6 @@ Repository for building [Pesa1234's](https://forum.openwrt.org/u/pesa1234) [GL.i
 - TCP BBR
 - UPnP
 - Usteer
-- Wireguard
+- Wireguard with NPTv6 hotplug script
 - ZRAM
 - Removed: odhcpd and ppp
