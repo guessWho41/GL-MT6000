@@ -31,7 +31,7 @@ jobs:
       - name: Check for new commits in pesa1234 repo
         id: check_commits
         run: |
-          remote_branch=$(git ls-remote https://github.com/${{ env.REMOTE_REPOSITORY }}.git "refs/heads/next-*" | sed -e 's|\(.*heads/\)||' | grep -iE 'test|beta' | sort -V | tail -n1)
+          remote_branch=$(git ls-remote https://github.com/${{ env.REMOTE_REPOSITORY }}.git "refs/heads/next-*" | sed -e 's|\(.*heads/\)||' | grep -iE 'test|beta|kern' | sort -V | tail -n1)
           [ -n "$remote_branch" ] && latest_commit_sha=$(gh api "repos/${{ env.REMOTE_REPOSITORY }}/commits/${remote_branch}" --jq .sha)
           [ -z "$latest_commit_sha" ] && { echo "*** COULD NOT GET latest_commit_sha FROM remote_branch=$remote_branch ***" ; exit 1; }
           gh api "repos/$TARGET_REPOSITORY/releases/latest" --jq .body 2>/dev/null | grep -q "${latest_commit_sha}" && echo "new_commits=false" >> $GITHUB_OUTPUT || echo "new_commits=true" >> $GITHUB_OUTPUT
@@ -154,7 +154,7 @@ jobs:
           cd ./builder_repo
           git fetch origin main
           git reset --hard origin/main
-          gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '[ .[] | select(.tag_name | ascii_downcase | (contains("test") or contains("beta"))) ] | .[3:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
+          gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '[ .[] | select(.tag_name | ascii_downcase | (contains("test") or contains("beta") or contains("kern"))) ] | .[3:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id" && gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null ||:
             if [ -d "$tag" ]; then
               rm -rfv "$tag"
