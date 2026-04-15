@@ -6,7 +6,7 @@ RULE_COMMENT="WireGuard VPN NPTv6"
 
 WG_IF=$(uci -q show network | grep "proto='wireguard'" | cut -d. -f2 | head -n 1)
 network_find_wan6 WAN6_IF
-if [ "$INTERFACE" != "$WG_IF" ] && [ "$INTERFACE" != "$WAN6_IF" ] && [ "${INTERFACE#wan}" = "$INTERFACE" ]; then
+if [ "$INTERFACE" != "$WG_IF" ] && [ "$INTERFACE" != "$WAN6_IF" ]; then
     exit 0
 fi
 
