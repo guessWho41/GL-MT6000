@@ -1,4 +1,4 @@
-chmod +x /etc/99-wg-nptv6.sh
+chmod +x /etc/nftables.d/99-wg-nptv6.sh
 uci add firewall include
 uci set firewall.@include[-1].path='/etc/99-wg-nptv6.sh'
 uci commit firewall
