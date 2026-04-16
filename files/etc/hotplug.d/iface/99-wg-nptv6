@@ -1,12 +1,8 @@
 #!/bin/sh
 
-. /lib/functions/network.sh
-
 [ "$ACTION" = "ifdown" ] || exit 0
 
-WG_IF=$(uci -q show network | grep "proto='wireguard'" | cut -d. -f2 | head -n 1)
-network_find_wan6 WAN6_IF
-
-if [ "$INTERFACE" = "$WAN6_IF" ] || [ "$INTERFACE" = "$WG_IF" ]; then
+WG_IF=$(ubus call network.interface dump | jsonfilter -e '@.interface[@.proto="wireguard"].interface')
+if [ "$INTERFACE" = "$WG_IF" ]; then
     /etc/init.d/firewall reload
 fi
