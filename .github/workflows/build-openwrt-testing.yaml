@@ -40,25 +40,20 @@ jobs:
             echo "*** COULD NOT DETERMINE remote_branch ***"
             exit 1
           fi
-          
           latest_commit_sha=$(git rev-parse "origin/${remote_branch}")
           if [ -z "$latest_commit_sha" ]; then
             echo "*** COULD NOT GET latest_commit_sha FROM remote_branch=$remote_branch ***"
           exit 1
           fi
-
           if gh api "repos/$TARGET_REPOSITORY/releases/latest" --jq .body 2>/dev/null | grep -q "${latest_commit_sha}"; then
             echo "new_commits=false" >> $GITHUB_OUTPUT
           else
             echo "new_commits=true" >> $GITHUB_OUTPUT
           fi
-
           release_prefix="${remote_branch%.rss*}"
-
           echo "remote_branch=${remote_branch}"
           echo "release_prefix=${release_prefix}"
           echo "latest_commit_sha=${latest_commit_sha}"
-
           {
             echo "remote_branch=${remote_branch}"
             echo "release_prefix=${release_prefix}"
