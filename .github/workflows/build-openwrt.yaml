@@ -32,16 +32,33 @@ jobs:
       - name: Check for new commits in pesa1234 repo
         id: check_commits
         run: |
-          remote_branch=$(git ls-remote https://github.com/${{ env.REMOTE_REPOSITORY }}.git "refs/heads/next-*" | sed -e 's|\(.*heads/\)||' | grep -viE 'test|beta' | sort -V | tail -n1)
-          [ -n "$remote_branch" ] && latest_commit_sha=$(gh api "repos/${{ env.REMOTE_REPOSITORY }}/commits/${remote_branch}" --jq .sha)
-          [ -z "$latest_commit_sha" ] && { echo "*** COULD NOT GET latest_commit_sha FROM remote_branch=$remote_branch ***" ; exit 1; }
-          gh api "repos/$TARGET_REPOSITORY/releases/latest" --jq .body 2>/dev/null | grep -q "${latest_commit_sha}" && echo "new_commits=false" >> $GITHUB_OUTPUT || echo "new_commits=true" >> $GITHUB_OUTPUT
+          git clone --filter=blob:none --no-checkout https://github.com/${{ env.REMOTE_REPOSITORY }}.git repo
+          cd repo
+          git fetch --prune origin "+refs/heads/*:refs/remotes/origin/*"
+          remote_branch=$(git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/remotes/origin/next-* | grep -viE 'test|beta|kern' | head -n1 | sed 's|origin/||')
+          if [ -z "$remote_branch" ]; then
+            echo "*** COULD NOT DETERMINE remote_branch ***"
+            exit 1
+          fi
+          latest_commit_sha=$(git rev-parse "origin/${remote_branch}")
+          if [ -z "$latest_commit_sha" ]; then
+            echo "*** COULD NOT GET latest_commit_sha FROM remote_branch=$remote_branch ***"
+          exit 1
+          fi
+          if gh api "repos/$TARGET_REPOSITORY/releases/latest" --jq .body 2>/dev/null | grep -q "${latest_commit_sha}"; then
+            echo "new_commits=false" >> $GITHUB_OUTPUT
+          else
+            echo "new_commits=true" >> $GITHUB_OUTPUT
+          fi
+          release_prefix="${remote_branch%.rss*}"
           echo "remote_branch=${remote_branch}"
-          echo "release_prefix=${remote_branch%.rss*}"
-          echo "latest_commit_sha=$latest_commit_sha"
-          echo "remote_branch=${remote_branch}" >> $GITHUB_OUTPUT
-          echo "release_prefix=${remote_branch%.rss*}" >> $GITHUB_OUTPUT
-          echo "latest_commit_sha=$latest_commit_sha" >> $GITHUB_OUTPUT
+          echo "release_prefix=${release_prefix}"
+          echo "latest_commit_sha=${latest_commit_sha}"
+          {
+            echo "remote_branch=${remote_branch}"
+            echo "release_prefix=${release_prefix}"
+            echo "latest_commit_sha=${latest_commit_sha}"
+          } >> $GITHUB_OUTPUT
 
   build:
     name: Build OpenWrt
