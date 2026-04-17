@@ -35,7 +35,7 @@ jobs:
           git clone --filter=blob:none --no-checkout https://github.com/${{ env.REMOTE_REPOSITORY }}.git repo
           cd repo
           git fetch --prune origin "+refs/heads/*:refs/remotes/origin/*"
-          remote_branch=$(git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/remotes/origin/next-* | grep -iE 'test|beta|kern' | head -n1 | sed 's|origin/||')
+          remote_branch=$(git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/remotes/origin/next-* | grep -iE 'test|b|kern' | head -n1 | sed 's|origin/||')
           if [ -z "$remote_branch" ]; then
             echo "*** COULD NOT DETERMINE remote_branch ***"
             exit 1
@@ -189,7 +189,7 @@ jobs:
           cd ./builder_repo
           git fetch origin main
           git reset --hard origin/main
-          gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '[ .[] | select(.tag_name | ascii_downcase | (contains("test") or contains("beta"))) ] | .[3:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
+          gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '[ .[] | select(.tag_name | ascii_downcase | (contains("test") or contains("b") or contains("kern"))) ] | .[3:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id" && gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null ||:
             if [ -d "$tag" ]; then
               rm -rfv "$tag"
