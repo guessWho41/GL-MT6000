@@ -3,4 +3,3 @@ if ! uci -q get firewall.wg_nptv6 > /dev/null 2>&1; then
     uci set firewall.wg_nptv6.path="/etc/nftables.d/99-wg-nptv6.sh"
     uci commit firewall
 fi
-exit 0
