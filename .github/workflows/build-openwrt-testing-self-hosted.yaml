@@ -34,7 +34,7 @@ jobs:
           git clone --filter=blob:none --no-checkout https://github.com/${{ env.REMOTE_REPOSITORY }}.git repo
           cd repo
           git fetch --prune origin "+refs/heads/*:refs/remotes/origin/*"
-          remote_branch=$(git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/remotes/origin/next-* | grep -iE 'test|b|kern' | head -n1 | sed 's|origin/||')
+          remote_branch=$(git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/remotes/origin/next-* | head -n1 | sed 's|origin/||')
           if [ -z "$remote_branch" ]; then
             echo "*** COULD NOT DETERMINE remote_branch ***"
             exit 1
@@ -162,7 +162,7 @@ jobs:
           - **TCP BBR**
           - **UPnP**
           - **Usteer**
-          - **Wireguard VPN with NPTv6 hotplug script**
+          - **Wireguard VPN with NPTv6**
           - **ZRAM**
           - **Removed:** odhcpd and ppp" --title "OpenWrt Custom Release for Flint 2 ($RELEASE_TAG)" ./release/*
 
@@ -171,7 +171,7 @@ jobs:
           cd ./builder_repo
           git fetch origin main
           git reset --hard origin/main
-          gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '[ .[] | select(.tag_name | ascii_downcase | (contains("test") or contains("b") or contains("kern"))) ] | .[3:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
+          gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '[ .[] | select(.tag_name) ] | .[3:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id" && gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null ||:
             if [ -d "$tag" ]; then
               rm -rfv "$tag"
