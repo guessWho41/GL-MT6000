@@ -82,7 +82,29 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
           # run again because sometimes it misses some dependencies
-          ./scripts/feeds install -a
+          # ./scripts/feeds install -a
+          # remove mwan3 and luci-app-mwan3 files
+          rm -rf ./feeds/packages/net/mwan3
+          rm -rf ./feeds/luci/applications/luci-app-mwan3
+
+      - name: Checkout mwan3 nftables repository
+        uses: actions/checkout@v6
+        with:
+          repository: dl12345/mwan3
+          path: "feeds/packages/net/mwan3"
+
+      - name: Checkout luci-app-mwan3 nftables repository
+        uses: actions/checkout@v6
+        with:
+          repository: dl12345/luci-app-mwan3
+          path: "feeds/luci/applications/luci-app-mwan3"
+      
+      #- name: Pull MWAN3 nftables port
+        #run: |
+          #rm -rf ./feeds/packages/net/mwan3
+          #git clone https://github.com/dl12345/mwan3.git ./feeds/packages/net/mwan3
+          #rm -rf ./feeds/luci/applications/luci-app-mwan3
+          #git clone https://github.com/dl12345/luci-app-mwan3 ./feeds/luci/applications/luci-app-mwan3
 
       - name: Setup configuration and custom files
         run: |
@@ -157,7 +179,7 @@ jobs:
           - **DDNS**
           - **DNS Crypt Proxy**
           - **Irqbalance with exceptions set by smp_affinity**
-          - **MWAN3**
+          - **MWAN3 nftables port**
           - **SQM**
           - **TCP BBR**
           - **UPnP**
