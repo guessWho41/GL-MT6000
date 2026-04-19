@@ -11,10 +11,10 @@ Repository for building [Pesa1234's](https://forum.openwrt.org/u/pesa1234) [GL.i
 - DDNS
 - DNS Crypt Proxy
 - Irqbalance with exceptions set by smp_affinity
-- MWAN3
+- MWAN3 nftables port
 - TCP BBR
 - UPnP
 - Usteer
-- Wireguard VPN with NPTv6 hotplug script
+- Wireguard VPN with NPTv6
 - ZRAM
 - Removed: odhcpd and ppp
