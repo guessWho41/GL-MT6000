@@ -98,13 +98,6 @@ jobs:
         with:
           repository: dl12345/luci-app-mwan3
           path: "feeds/luci/applications/luci-app-mwan3"
-      
-      #- name: Pull MWAN3 nftables port
-        #run: |
-          #rm -rf ./feeds/packages/net/mwan3
-          #git clone https://github.com/dl12345/mwan3.git ./feeds/packages/net/mwan3
-          #rm -rf ./feeds/luci/applications/luci-app-mwan3
-          #git clone https://github.com/dl12345/luci-app-mwan3 ./feeds/luci/applications/luci-app-mwan3
 
       - name: Setup configuration and custom files
         run: |
