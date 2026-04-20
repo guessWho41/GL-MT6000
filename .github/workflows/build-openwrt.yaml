@@ -99,21 +99,6 @@ jobs:
         run: |
           ./scripts/feeds update -a
           ./scripts/feeds install -a
-          # Remove mwan3 and luci-app-mwan3 files
-          rm -rf ./feeds/packages/net/mwan3
-          rm -rf ./feeds/luci/applications/luci-app-mwan3
-
-      - name: Checkout mwan3 nftables repository
-        uses: actions/checkout@v6
-        with:
-          repository: dl12345/mwan3
-          path: "feeds/packages/net/mwan3"
-
-      - name: Checkout luci-app-mwan3 nftables repository
-        uses: actions/checkout@v6
-        with:
-          repository: dl12345/luci-app-mwan3
-          path: "feeds/luci/applications/luci-app-mwan3"
 
       - name: Setup configuration and custom files
         run: |
