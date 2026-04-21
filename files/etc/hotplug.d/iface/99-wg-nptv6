@@ -3,9 +3,11 @@
 [ "$ACTION" = "ifdown" ] || exit 0
 
 WG_INTERFACES=$(ubus call network.interface dump | jsonfilter -e '@.interface[@.proto="wireguard"].interface')
+[ -z "$WG_INTERFACES" ] && exit 0
+
 for WG_IF in $WG_INTERFACES; do
-    if [ "$INTERFACE" = "$WG_IF" ]; then
-        /etc/init.d/firewall reload
-        break
-    fi
+	if [ "$INTERFACE" = "$WG_IF" ]; then
+		/etc/init.d/firewall reload
+		break
+	fi
 done
