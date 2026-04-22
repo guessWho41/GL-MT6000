@@ -1,13 +1,21 @@
 #!/bin/sh
 
+. /lib/functions/network.sh
+
 [ "$ACTION" = "ifdown" ] || exit 0
 
-WG_INTERFACES=$(ubus call network.interface dump | jsonfilter -e '@.interface[@.proto="wireguard"].interface')
-[ -z "$WG_INTERFACES" ] && exit 0
+network_find_wan6 WAN6_IF
+[ -z "$WAN6_IF" ] && exit 0
 
+if [ "$INTERFACE" = "$WAN6_IF" ]; then
+    /etc/init.d/firewall reload
+    exit 0
+fi
+
+WG_INTERFACES=$(ubus call network.interface dump | jsonfilter -e '@.interface[@.proto="wireguard"].interface')
 for WG_IF in $WG_INTERFACES; do
-	if [ "$INTERFACE" = "$WG_IF" ]; then
-		/etc/init.d/firewall reload
-		break
-	fi
+    if [ "$INTERFACE" = "$WG_IF" ]; then
+        /etc/init.d/firewall reload
+        exit 0
+    fi
 done
