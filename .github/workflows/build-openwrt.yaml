@@ -188,7 +188,7 @@ jobs:
           - **DDNS**
           - **DNS Crypt Proxy**
           - **Irqbalance with exceptions set by smp_affinity**
-          - **MWAN3**
+          - **MWAN3 nftables port**
           - **SQM**
           - **TCP BBR**
           - **UPnP**
