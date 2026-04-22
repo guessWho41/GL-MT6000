@@ -19,7 +19,6 @@
 # Further documentation can be found here:
 # https://openwrt.org/docs/guide-user/network/wan/multiwan/mwan3#alertsnotifications
 
-
 is_online() {
 	echo "$MWAN3_STATUS" | jsonfilter -e "@.interfaces.$1.status" | grep -qx online
 }
