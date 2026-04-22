@@ -1,0 +1,208 @@
+#!/bin/sh
+#
+# This file is interpreted as shell script.
+# Put your custom mwan3 action here, they will
+# be executed with each netifd hotplug interface event
+# on interfaces for which mwan3 is enabled.
+#
+# There are three main environment variables that are passed to this script.
+#
+# $ACTION
+#      <ifup>         Is called by netifd and mwan3track.
+#      <ifdown>       Is called by netifd and mwan3track.
+#      <connected>    Is only called by mwan3track if tracking was successful.
+#      <disconnected> Is only called by mwan3track if tracking has failed.
+# $INTERFACE	Name of the interface an action relates to (e.g. "wan" or "wwan").
+# $DEVICE	Physical device name of the interface the action relates to (e.g. "eth0" or "wwan0").
+#               Note: On an ifdown event, $DEVICE is not available, use $INTERFACE instead.
+#
+# Further documentation can be found here:
+# https://openwrt.org/docs/guide-user/network/wan/multiwan/mwan3#alertsnotifications
+
+
+is_online() {
+	echo "$MWAN3_STATUS" | jsonfilter -e "@.interfaces.$1.status" | grep -qx online
+}
+
+get_policy_interfaces() {
+	local policy family member iface metric iface_family
+	policy="$1"
+	family="$2"
+
+	uci show mwan3."$policy" 2>/dev/null | grep '\.use_member=' | sed "s/.*='\(.*\)'/\1/" | while read -r member; do
+		iface=$(uci -q get mwan3."$member".interface)
+		metric=$(uci -q get mwan3."$member".metric)
+		[ -n "$iface" ] || continue
+		[ -n "$metric" ] || continue
+		if [ -n "$family" ]; then
+			iface_family=$(uci -q get mwan3."$iface".family)
+			[ "$iface_family" = "$family" ] || continue
+		fi
+		echo "$metric $iface"
+	done | sort -n | awk '!seen[$2]++ {print $2}'
+}
+
+get_table() {
+	local device
+	device=$(ubus call network.interface."$1" status 2>/dev/null | jsonfilter -e '@.l3_device' | head -1)
+	[ -n "$device" ] || return 1
+	ip rule show | awk -v dev="$device" '$0 ~ ("iif " dev " ") {print $NF}' | head -1
+}
+
+get_wg_interfaces() {
+	ubus call network.interface dump 2>/dev/null | jsonfilter -e '@.interface[@.proto="wireguard"].interface'
+}
+
+get_or_assign_fwmark() {
+	local iface idx mark mmx_mask
+	iface="$1"
+	idx="$2"
+
+	mark=$(uci -q get network."$iface".fwmark)
+	[ -n "$mark" ] && { echo "$mark"; return 0; }
+
+	mmx_mask=$(uci -q get mwan3.globals.mmx_mask)
+	mmx_mask=${mmx_mask:-0x3F00}
+	mark=$(printf "0x%x" $(( mmx_mask + 0x100 + idx * 0x100 )))
+
+	uci set network."$iface".fwmark="$mark"
+	uci commit network
+	/etc/init.d/network reload
+	logger -t mwan3-wg "[$iface] Auto-assigned fwmark $mark and reloaded network"
+	echo "$mark"
+}
+
+wg_del_rule() {
+	local mark prio
+	mark="$1"
+	prio="$2"
+	while ip rule show | grep -q "fwmark $mark"; do
+		ip rule del fwmark "$mark" priority "$prio" 2>/dev/null
+	done
+}
+
+wg_set_rule() {
+	local iface mark prio table
+	iface="$1"
+	mark="$2"
+	prio="$3"
+	table=$(get_table "$iface")
+	[ -n "$table" ] || {
+		logger -t mwan3-wg "[$iface] Could not resolve table, aborting"
+		return 1
+	}
+	wg_del_rule "$mark" "$prio"
+	ip rule add fwmark "$mark" lookup "$table" priority "$prio"
+	logger -t mwan3-wg "[$iface] WireGuard routing via table $table ($iface)"
+}
+
+update_ddns() {
+	local primary backup family services section current target is_v6 modified
+	primary="$1"
+	backup="$2"
+	family="$3"
+	services="$4"
+	modified=""
+
+	[ -n "$primary" ] || return
+	[ -n "$services" ] || return
+
+	target=""
+	if is_online "$primary"; then
+		target="$primary"
+	elif [ -n "$backup" ] && is_online "$backup"; then
+		target="$backup"
+	fi
+	[ -n "$target" ] || return
+
+	for section in $services; do
+		[ "$(uci -q get ddns."$section".enabled)" = "1" ] || continue
+		is_v6=$(uci -q get ddns."$section".use_ipv6)
+		if [ "$family" = "ipv6" ]; then
+			[ "$is_v6" = "1" ] || continue
+		else
+			[ "$is_v6" = "1" ] && continue
+		fi
+
+		current=$(uci -q get ddns."$section".interface)
+		[ "$current" != "$target" ] || continue
+
+		logger -t mwan3-ddns "[$family] Switching '$section' from $current to $target"
+		uci set ddns."$section".interface="$target"
+		case "$(uci -q get ddns."$section".ip_source)" in
+			network) uci set ddns."$section".ip_network="$target" ;;
+			web)     uci set ddns."$section".bind_network="$target" ;;
+		esac
+		modified=1
+	done
+
+	[ -n "$modified" ] || return
+	logger -t mwan3-ddns "[$family] Applying DDNS changes"
+	uci commit ddns
+	/etc/init.d/ddns restart
+}
+
+update_wg() {
+	local iface mark prio primary backup
+	iface="$1"
+	mark="$2"
+	prio="$3"
+	primary="$4"
+	backup="$5"
+
+	[ -n "$mark" ] || {
+		logger -t mwan3-wg "[$iface] No fwmark configured, skipping"
+		return
+	}
+	[ -n "$prio" ] || {
+		logger -t mwan3-wg "[$iface] Could not determine priority, skipping"
+		return
+	}
+
+	if is_online "$primary"; then
+		wg_set_rule "$primary" "$mark" "$prio"
+	elif [ -n "$backup" ] && is_online "$backup"; then
+		wg_set_rule "$backup" "$mark" "$prio"
+	else
+		wg_del_rule "$mark" "$prio"
+		logger -t mwan3-wg "[$iface] All WANs down, removing ip rule"
+	fi
+}
+
+case "$ACTION" in
+	connected|disconnected)
+
+		MWAN3_STATUS=$(ubus call mwan3 status 2>/dev/null)
+
+		WG_PRIO=$(ip rule show | awk '/iif/ {gsub(/:/, "", $1); print $1+0}' | sort -n | head -1)
+		WG_PRIO=$((WG_PRIO - 1))
+
+		POLICY_V4=$(uci -q get mwan3.default_rule_v4.use_policy)
+		V4_IFACES=$(get_policy_interfaces "$POLICY_V4" ipv4)
+		PRIMARY_V4=$(echo "$V4_IFACES" | sed -n '1p')
+		BACKUP_V4=$(echo "$V4_IFACES" | sed -n '2p')
+
+		POLICY_V6=$(uci -q get mwan3.default_rule_v6.use_policy)
+		V6_IFACES=$(get_policy_interfaces "$POLICY_V6" ipv6)
+		PRIMARY_V6=$(echo "$V6_IFACES" | sed -n '1p')
+		BACKUP_V6=$(echo "$V6_IFACES" | sed -n '2p')
+
+		SERVICES=""
+		[ -f /etc/config/ddns ] && SERVICES=$(uci show ddns | grep "=service" | cut -d= -f1 | sed 's/^ddns\.//')
+
+		update_ddns "$PRIMARY_V4" "$BACKUP_V4" ipv4 "$SERVICES"
+		[ -n "$PRIMARY_V6" ] && update_ddns "$PRIMARY_V6" "$BACKUP_V6" ipv6 "$SERVICES"
+
+		idx=0
+		for wg_iface in $(get_wg_interfaces); do
+			wg_mark=$(get_or_assign_fwmark "$wg_iface" "$idx") || {
+				logger -t mwan3-wg "[$wg_iface] Skipping: could not get or assign fwmark"
+				idx=$((idx + 1))
+				continue
+			}
+			update_wg "$wg_iface" "$wg_mark" "$WG_PRIO" "$PRIMARY_V4" "$BACKUP_V4"
+			idx=$((idx + 1))
+		done
+
+		;;
+esac
