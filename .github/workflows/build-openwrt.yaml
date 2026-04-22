@@ -109,6 +109,12 @@ jobs:
           repository: dl12345/mwan3
           path: "feeds/packages/net/mwan3"
 
+      - name: Checkout luci-app-mwan3 nftables repository
+        uses: actions/checkout@v6
+        with:
+          repository: dl12345/luci-app-mwan3
+          path: "feeds/luci/applications/luci-app-mwan3"
+
       - name: Setup configuration and custom files
         run: |
           cp -v ./builder_repo/config/${{ env.CONFIG_FILE }} .config
