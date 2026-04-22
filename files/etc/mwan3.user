@@ -130,7 +130,8 @@ update_ddns() {
 		uci set ddns."$section".interface="$target"
 		case "$(uci -q get ddns."$section".ip_source)" in
 			network) uci set ddns."$section".ip_network="$target" ;;
-			web)     uci set ddns."$section".bind_network="$target" ;;
+			web) uci set ddns."$section".bind_network="$target" ;;
+			interface) uci set ddns."$section".ip_interface="$target" ;;
 		esac
 		modified=1
 	done
@@ -202,6 +203,5 @@ case "$ACTION" in
 			update_wg "$wg_iface" "$wg_mark" "$WG_PRIO" "$PRIMARY_V4" "$BACKUP_V4"
 			idx=$((idx + 1))
 		done
-
 		;;
 esac
