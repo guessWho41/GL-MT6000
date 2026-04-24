@@ -202,7 +202,7 @@ jobs:
           cd ./builder_repo
           git fetch origin main
           git reset --hard origin/main
-          gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '[ .[] | select(.tag_name) ] | .[5:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
+          gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '.[5:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id" && gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null ||:
             if [ -d "$tag" ]; then
               rm -rfv "$tag"
