@@ -110,8 +110,6 @@ update_ddns() {
 	backup="$2"
 	family="$3"
 
-	[ -n "$primary" ] || return
-
 	_ddns_target=""
 	if is_online "$primary"; then
 		_ddns_target="$primary"
@@ -144,10 +142,6 @@ update_wg() {
 	}
 	[ -n "$prio" ] || {
 		logger -t mwan3-wg "[$iface] Could not determine priority, skipping"
-		return
-	}
-	[ -n "$primary" ] || {
-		logger -t mwan3-wg "[$iface] No primary WAN resolved, skipping"
 		return
 	}
 
@@ -183,9 +177,11 @@ case "$ACTION" in
 			BACKUP_V6=$(echo "$V6" | sed -n '2p')
 		}
 
-		config_load ddns
-		update_ddns "$PRIMARY_V4" "$BACKUP_V4" ipv4
-		[ -n "$PRIMARY_V6" ] && update_ddns "$PRIMARY_V6" "$BACKUP_V6" ipv6
+		if [ -f /etc/config/ddns ]; then
+			config_load ddns
+			update_ddns "$PRIMARY_V4" "$BACKUP_V4" ipv4
+			[ -n "$PRIMARY_V6" ] && update_ddns "$PRIMARY_V6" "$BACKUP_V6" ipv6
+		fi
 
 		idx=0
 		for wg_iface in $(get_wg_interfaces); do
