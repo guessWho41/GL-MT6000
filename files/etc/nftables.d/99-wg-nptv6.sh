@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# WireGuard NPTv6 using primary wan6 interface
+
 . /lib/functions/network.sh
 
 find_primary_wan6() {
