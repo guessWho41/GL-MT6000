@@ -78,12 +78,12 @@ wg_set_rule() {
 	}
 	wg_del_rule "$mark"
 	ip rule add fwmark "$mark" lookup "$table" priority "$prio"
-	logger -t mwan3-wg "[$iface] WireGuard routing via table $table ($iface)"
+	logger -t mwan3-wg "[$iface] WireGuard routing via table $table"
 }
 
 _ddns_handle_section() {
-	local section="$1"
-	local enabled use_ipv6 current ip_source
+	local section enabled use_ipv6 current ip_source
+	section="$1"
 	config_get enabled "$section" enabled
 	[ "$enabled" = "1" ] || return
 	config_get use_ipv6 "$section" use_ipv6
