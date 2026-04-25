@@ -19,7 +19,7 @@
 # Further documentation can be found here:
 # https://openwrt.org/docs/guide-user/network/wan/multiwan/mwan3#alertsnotifications
 
-#WireGuard routing and DDNS failover
+# WireGuard routing and DDNS failover
 
 . /lib/functions.sh
 
@@ -187,15 +187,15 @@ case "$ACTION" in
 			WG_PRIO=$(ip rule show | awk '/iif/ {gsub(/:/, "", $1); n=$1+0; if (min=="" || n<min) min=n} END {print min}')
 			WG_PRIO=$((WG_PRIO - 1))
 
-			idx=0
-			for wg_iface in $WG_IFACES; do
-				wg_mark=$(get_or_assign_fwmark "$wg_iface" "$idx")
-				idx=$((idx + 1))
-				[ -n "$wg_mark" ] || {
-					logger -t mwan3-wg "[$wg_iface] Skipping: could not get or assign fwmark"
+			IDX=0
+			for WG_IFACE in $WG_IFACES; do
+				WG_MARK=$(get_or_assign_fwmark "$WG_IFACE" "$IDX")
+				IDX=$((IDX + 1))
+				[ -n "$WG_MARK" ] || {
+					logger -t mwan3-wg "[$WG_IFACE] Skipping: could not get or assign fwmark"
 					continue
 				}
-				update_wg "$wg_iface" "$wg_mark" "$WG_PRIO" "$PRIMARY_V4" "$BACKUP_V4"
+				update_wg "$WG_IFACE" "$WG_MARK" "$WG_PRIO" "$PRIMARY_V4" "$BACKUP_V4"
 			done
 		fi
 		;;
