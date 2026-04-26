@@ -1,4 +1,4 @@
-name: Build OpenWrt for GL-MT6000 self-hosted
+name: Build OpenWrt testing for GL-MT6000 self-hosted
 
 permissions:
   contents: write
@@ -14,7 +14,7 @@ on:
 
 env:
   REMOTE_REPOSITORY: pesa1234/openwrt
-  CONFIG_FILE: mt6000.config
+  config_file: mt6000.config
   GH_TOKEN: ${{ github.token }}
   TARGET_REPOSITORY: "${{ github.repository }}"
 
@@ -24,7 +24,6 @@ jobs:
     runs-on: self-hosted
     outputs:
       remote_branch: ${{ steps.check_commits.outputs.remote_branch }}
-      release_prefix: ${{ steps.check_commits.outputs.release_prefix }}
       new_commits: ${{ steps.check_commits.outputs.new_commits }}
       latest_commit_sha: ${{ steps.check_commits.outputs.latest_commit_sha }}
     steps:
@@ -42,22 +41,17 @@ jobs:
           latest_commit_sha=$(git rev-parse "origin/${remote_branch}")
           if [ -z "$latest_commit_sha" ]; then
             echo "*** COULD NOT GET latest_commit_sha FROM remote_branch=$remote_branch ***"
-          exit 1
+            exit 1
           fi
           if gh api "repos/$TARGET_REPOSITORY/releases/latest" --jq .body 2>/dev/null | grep -q "${latest_commit_sha}"; then
             echo "new_commits=false" >> $GITHUB_OUTPUT
           else
             echo "new_commits=true" >> $GITHUB_OUTPUT
           fi
-          release_prefix="${remote_branch%.rss*}"
-          echo "remote_branch=${remote_branch}"
-          echo "release_prefix=${release_prefix}"
-          echo "latest_commit_sha=${latest_commit_sha}"
           {
             echo "remote_branch=${remote_branch}"
-            echo "release_prefix=${release_prefix}"
             echo "latest_commit_sha=${latest_commit_sha}"
-          } >> $GITHUB_OUTPUT
+          } | tee -a $GITHUB_OUTPUT
 
   build:
     name: Build OpenWrt
@@ -99,7 +93,7 @@ jobs:
 
       - name: Setup configuration and custom files
         run: |
-          cp -v ./builder_repo/config/${{ env.CONFIG_FILE }} .config
+          cp -v ./builder_repo/config/${{ env.config_file }} .config
           cp -rv ./builder_repo/files ./
           cp -rv ./builder_repo/patches ./
           for file in $(find ./patches -name "*.patch" | sort); do patch -f -p1 -i ${file}; done
@@ -130,9 +124,9 @@ jobs:
 
       - name: Get release info
         run: |
-          VERSION=$(find ./bin -type f -iname 'version.buildinfo' -print -quit | xargs -r cat | tr -d '\n')
-          TAG="$(date +%F)_${VERSION}_${{ needs.check_commits.outputs.remote_branch }}"
-          echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
+          version=$(find ./bin -type f -iname 'version.buildinfo' -print -quit | xargs -r cat | tr -d '\n')
+          RELEASE_TAG="$(date +%F)_${version}_${{ needs.check_commits.outputs.remote_branch }}-testing"
+          echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
 
       - name: Configure Git identity
         run: |
@@ -141,6 +135,9 @@ jobs:
 
       - name: Commit build artifacts
         run: |
+          for artifact_dir in ./bin/*/; do
+            mv -v "${artifact_dir%/}" "${artifact_dir%/}-testing"
+          done
           mv -v ./bin/* ./builder_repo/ ||:
           cd ./builder_repo
           git add .
@@ -160,7 +157,7 @@ jobs:
           
           ### 📝 Build Information
           - **Target:** [Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
-          - **Configuration:** [${{ env.CONFIG_FILE }}](${{ env.CONFIG_FILE }})
+          - **Configuration:** [${{ env.config_file }}](${{ env.config_file }})
           - **Dropbear replaced with OpenSSH and SFTP with hardened config**
           - **Mbed TLS relaced with OpenSSL**
           - **uHTTPd replaced with nginx**
@@ -184,7 +181,7 @@ jobs:
           cd ./builder_repo
           git fetch origin main
           git reset --hard origin/main
-          gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '.[5:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
+          gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '[.[] | select(.tag_name | endswith("-testing") | not)] | .[5:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id" && gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null ||:
             if [ -d "$tag" ]; then
               rm -rfv "$tag"
