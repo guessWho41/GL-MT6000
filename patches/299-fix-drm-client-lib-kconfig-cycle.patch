@@ -1,0 +1,8 @@
+--- a/package/kernel/linux/modules/video.mk
++++ b/package/kernel/linux/modules/video.mk
+@@ -1,6 +1,6 @@
+ define KernelPackage/drm-client-lib
+   SUBMENU:=$(VIDEO_MENU)
+   TITLE:=DRM client library setup helper
+-  DEPENDS:=@DISPLAY_SUPPORT +@LINUX_6_18
++  DEPENDS:=@DISPLAY_SUPPORT @LINUX_6_18
