@@ -117,7 +117,7 @@ jobs:
 
       - name: Setup configuration and custom files
         run: |
-          cp -v ./builder_repo/config/${{ env.CONFIG_FILE }} .config
+          cp -v ./builder_repo/config/${{ env.config_file }} .config
           cp -rv ./builder_repo/files ./
           cp -rv ./builder_repo/patches ./
           for file in $(find ./patches -name "*.patch" | sort); do patch -f -p1 -i ${file}; done
@@ -148,9 +148,9 @@ jobs:
 
       - name: Get release info
         run: |
-          VERSION=$(find ./bin -type f -iname 'version.buildinfo' -print -quit | xargs -r cat | tr -d '\n')
-          TAG="$(date +%F)_${VERSION}_${{ needs.check_commits.outputs.remote_branch }}"
-          echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
+          version=$(find ./bin -type f -iname 'version.buildinfo' -print -quit | xargs -r cat | tr -d '\n')
+          RELEASE_TAG="$(date +%F)_${version}_${{ needs.check_commits.outputs.remote_branch }}"
+          echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
 
       - name: Configure Git identity
         run: |
@@ -178,7 +178,7 @@ jobs:
           
           ### 📝 Build Information
           - **Target:** [Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
-          - **Configuration:** [${{ env.CONFIG_FILE }}](${{ env.CONFIG_FILE }})
+          - **Configuration:** [${{ env.config_file }}](${{ env.config_file }})
           - **Dropbear replaced with OpenSSH and SFTP with hardened config**
           - **Mbed TLS relaced with OpenSSL**
           - **uHTTPd replaced with nginx**
@@ -202,7 +202,7 @@ jobs:
           cd ./builder_repo
           git fetch origin main
           git reset --hard origin/main
-          gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '.[5:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
+          gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '[.[] | select(.tag_name | endswith("-testing") | not)] | .[3:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id" && gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null ||:
             if [ -d "$tag" ]; then
               rm -rfv "$tag"
