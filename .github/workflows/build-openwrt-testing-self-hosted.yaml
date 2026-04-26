@@ -131,8 +131,8 @@ jobs:
       - name: Get release info
         run: |
           VERSION=$(find ./bin -type f -iname 'version.buildinfo' -print -quit | xargs -r cat | tr -d '\n')
-          TAG="$(date +%F)_${VERSION}_${{ needs.check_commits.outputs.remote_branch }}"
-          echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
+          RELEASE_TAG="$(date +%F)_${VERSION}_${{ needs.check_commits.outputs.remote_branch }}-testing"
+          echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
 
       - name: Configure Git identity
         run: |
@@ -141,6 +141,8 @@ jobs:
 
       - name: Commit build artifacts
         run: |
+          artifact_dir=./bin/*/
+          mv -v "${artifact_dir%/}" "${artifact_dir%/}-testing"
           mv -v ./bin/* ./builder_repo/ ||:
           cd ./builder_repo
           git add .
