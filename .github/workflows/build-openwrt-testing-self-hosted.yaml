@@ -130,8 +130,8 @@ jobs:
 
       - name: Get release info
         run: |
-          VERSION=$(find ./bin -type f -iname 'version.buildinfo' -print -quit | xargs -r cat | tr -d '\n')
-          RELEASE_TAG="$(date +%F)_${VERSION}_${{ needs.check_commits.outputs.remote_branch }}-testing"
+          version=$(find ./bin -type f -iname 'version.buildinfo' -print -quit | xargs -r cat | tr -d '\n')
+          RELEASE_TAG="$(date +%F)_${version}_${{ needs.check_commits.outputs.remote_branch }}-testing"
           echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
 
       - name: Configure Git identity
