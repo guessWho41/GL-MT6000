@@ -447,7 +447,7 @@
  
  	if [ "$reprobe_ok" -eq 1 ] && ! wait_for_mt7915e_runtime; then
 -		logger -t advanced_setup "mt7915e runtime files not ready after reprobe"
-+		log_msg "[mt7915e] Module runtime files not ready after reload"
++		log_msg "[mt7915e] Module files not ready after reload"
  		reprobe_ok=0
  	fi
  
@@ -456,7 +456,7 @@
  
  	if [ "$reprobe_ok" -ne 1 ]; then
 -		logger -t advanced_setup "mt7915e reprobe incomplete; Wi-Fi bring-up attempted as fallback"
-+		log_msg "[mt7915e] Module reload incomplete. Attempt to re-enable WLAN was made"
++		log_msg "[mt7915e] Module reload incomplete. Attempted to re-enable WLAN"
  		return 1
  	fi
  
@@ -499,7 +499,7 @@
  
  	if mt7915e_airtime_reboot_required; then
 -		logger -t advanced_setup "skipping HW-ATF runtime setup; reboot required for Airtime Fairness mode change"
-+		log_msg "[HW-ATF] Skipping runtime setup. Reboot is required to change Aritime Fairness mode"
++		log_msg "[HW-ATF] Skipping setup. Reboot is required to change Aritime Fairness mode"
  		return 0
  	fi
  
@@ -603,7 +603,7 @@
      if [ ! -f /tmp/smp_affinity_started ]; then
  		delay=$(uci get advanced.@advanced_packet_steering[0].advanced_packet_steering_delay 2>/dev/null || echo "30")
 -		logger -s "smp_affinity: Starting with delay of $delay sec."
-+		log_msg "[smp_affinity] Starting with delay of $delay sec."
++		log_msg "[smp_affinity] Starting with delay of $delay seconds"
  		sleep $delay
  		echo 1 > /tmp/smp_affinity_started
  	fi
