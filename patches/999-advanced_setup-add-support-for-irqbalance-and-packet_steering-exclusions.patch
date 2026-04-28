@@ -34,7 +34,7 @@
  {
  	# try to get all wifi and eth net interface.
 -	logger -s "smp_affinity: try to get all wifi and eth net interface."
-+	log_msg "[smp_affinity] Fetching all Wi-Fi and ethernet interfaces"
++	log_msg "[INFO] Fetching all ethernet and WLAN interfaces"
  	NET_IF_LIST=`ls /sys/class/net`
  	for vif in $NET_IF_LIST;
  	do
@@ -43,17 +43,17 @@
  		fi
  	done;
 -	logger -s "smp_affinity: RPS_IF_LIST = $RPS_IF_LIST"
-+	log_msg "[smp_affinity] RPS_IF_LIST = $RPS_IF_LIST"
++	log_msg "[INFO] List of RPS interfaces: $RPS_IF_LIST"
  
  	# try to get wifi physical card num.
 -	logger -s "smp_affinity: try to get wifi physical card num."
-+	log_msg "[smp_affinity] Fetching Wi-Fi physical card number"
++	log_msg "[INFO] Fetching WLAN radio number"
  	VIRTUAL_RADIO_LIST=`ls -l /sys/class/ieee80211/ | awk -F 'devices' '{print $2}' | awk -F 'phy' '{print $1}' | uniq`
  	for v in $VIRTUAL_RADIO_LIST;
  	do
  		NUM_WIFI_CARD=`expr $NUM_WIFI_CARD + 1`
 -		logger -s "smp_affinity: physical raido $v"
-+		log_msg "[smp_affinity] Physical radio $v"
++		log_msg "[INFO] WLAN radio path is $v"
  		if [[ $v == *"wmac"* ]]; then
  			WIFI_RADIO1=1
  		fi
@@ -62,7 +62,7 @@
  		if [[ -f "/sys/module/$v/parameters/wed_enable" ]]; then
  			WED_ENABLE_LIST=`cat /sys/module/$v/parameters/wed_enable`
 -			logger -s "smp_affinity: wed enable ori info $v $WED_ENABLE_LIST"
-+			log_msg "[smp_affinity] WED enabled in module $v = $WED_ENABLE_LIST"
++			log_msg "[INFO] WED enabled setting in module $v is $WED_ENABLE_LIST"
  			if [[ $WED_ENABLE_LIST == "Y" ]]; then
  				WED_ENABLE=1
  			fi
@@ -73,11 +73,11 @@
 -	logger -s "smp_affinity: pcie1 wifi enable = $WIFI_RADIO2"
 -	logger -s "smp_affinity: pcie2 wifi enable = $WIFI_RADIO3"
 -	logger -s "smp_affinity: WED enable = $WED_ENABLE"
-+	log_msg "[smp_affinity] NUM_WIFI_CARD = $NUM_WIFI_CARD"
-+	log_msg "[smp_affinity] Platform Wi-Fi enabled = $WIFI_RADIO1"
-+	log_msg "[smp_affinity] PCIe1 Wi-Fi enabled = $WIFI_RADIO2"
-+	log_msg "[smp_affinity] PCIe2 Wi-Fi enabled = $WIFI_RADIO3"
-+	log_msg "[smp_affinity] WED enabled = $WED_ENABLE"
++	log_msg "[INFO] WLAN radio number is $NUM_WIFI_CARD"
++	log_msg "[INFO] Platform WLAN enabled setting is $WIFI_RADIO1"
++	log_msg "[INFO] PCIe1 WLAN enabled setting is $WIFI_RADIO2"
++	log_msg "[INFO] PCIe2 WLAN enabled setting is $WIFI_RADIO3"
++	log_msg "[INFO] WED enabled setting is $WED_ENABLE"
  }
  
  # $1: CPU#
@@ -86,7 +86,7 @@
  	eval oval=\$CPU${1}_RPS
  	eval CPU${1}_RPS=\"\$CPU${1}_RPS $2\"
 -	logger -s "smp_affinity: CPU${1}_RPS=\"\$CPU${1}_RPS $2\""
-+	log_msg "[smp_affinity] CPU${1}_RPS=\"\$CPU${1}_RPS $2\""
++	log_msg "[smp_affinity] Added interface $2 to CPU${1} RPS"
  }
  
  MT7988()
@@ -95,7 +95,7 @@
  
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
 -		logger -s "smp_affinity: WED_ENABLE ON irq/iptable setting"
-+		log_msg "[smp_affinity] Settig up WED iptables rules"
++		log_msg "[WED] Setting up WED iptables rules"
  		#TCP Binding
  		iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  		iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
@@ -114,7 +114,7 @@
  		fi
  	done;
 -	logger -s "smp_affinity: $WIFI_IF_LIST = $WIFI_IF_LIST"
-+	log_msg "[smp_affinity] $WIFI_IF_LIST = $WIFI_IF_LIST"
++	log_msg "[smp_affinity] List of WLAN interfaces: $WIFI_IF_LIST"
  	# Please update the CPU binding in each cases.
  	# CPU#_AFFINITY="add binding irq number here"
  	# CPU#_RPS="add binding interface name here"
@@ -126,10 +126,10 @@
 -	logger -s "smp_affinity: CPU1_AFFINITY = $CPU1_AFFINITY"
 -	logger -s "smp_affinity: CPU2_AFFINITY = $CPU2_AFFINITY"
 -	logger -s "smp_affinity: CPU3_AFFINITY = $CPU3_AFFINITY"
-+	log_msg "[smp_affinity] CPU0_AFFINITY = $CPU0_AFFINITY"
-+	log_msg "[smp_affinity] CPU1_AFFINITY = $CPU1_AFFINITY"
-+	log_msg "[smp_affinity] CPU2_AFFINITY = $CPU2_AFFINITY"
-+	log_msg "[smp_affinity] CPU3_AFFINITY = $CPU3_AFFINITY"
++	log_msg "[smp_affinity] CPU0 affinity is $CPU0_AFFINITY"
++	log_msg "[smp_affinity] CPU1 affinity is $CPU1_AFFINITY"
++	log_msg "[smp_affinity] CPU2 affinity is $CPU2_AFFINITY"
++	log_msg "[smp_affinity] CPU3 affinity is $CPU3_AFFINITY"
  }
  
  MT7986()
@@ -138,7 +138,7 @@
  
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
 -		logger -s "smp_affinity: WED_ENABLE ON irq/iptable setting"
-+		log_msg "[smp_affinity] Settig up WED iptables rules"
++		log_msg "[WED] Setting up WED iptables rules"
  		#TCP Binding
  		iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  		iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
@@ -155,7 +155,7 @@
  		fi
  	done;
 -	logger -s "smp_affinity: $WIFI_IF_LIST = $WIFI_IF_LIST"
-+	log_msg "[smp_affinity] $WIFI_IF_LIST = $WIFI_IF_LIST"
++	log_msg "[smp_affinity] List of WLAN interfaces: $WIFI_IF_LIST"
  	# Please update the CPU binding in each cases.
  	# CPU#_AFFINITY="add binding irq number here"
  	# CPU#_RPS="add binding interface name here"
@@ -167,10 +167,10 @@
 -	logger -s "smp_affinity: CPU1_AFFINITY = $CPU1_AFFINITY"
 -	logger -s "smp_affinity: CPU2_AFFINITY = $CPU2_AFFINITY"
 -	logger -s "smp_affinity: CPU3_AFFINITY = $CPU3_AFFINITY"
-+	log_msg "[smp_affinity] CPU0_AFFINITY = $CPU0_AFFINITY"
-+	log_msg "[smp_affinity] CPU1_AFFINITY = $CPU1_AFFINITY"
-+	log_msg "[smp_affinity] CPU2_AFFINITY = $CPU2_AFFINITY"
-+	log_msg "[smp_affinity] CPU3_AFFINITY = $CPU3_AFFINITY"
++	log_msg "[smp_affinity] CPU0 affinity is $CPU0_AFFINITY"
++	log_msg "[smp_affinity] CPU1 affinity is $CPU1_AFFINITY"
++	log_msg "[smp_affinity] CPU2 affinity is $CPU2_AFFINITY"
++	log_msg "[smp_affinity] CPU3 affinity is $CPU3_AFFINITY"
  }
  
  gl_mt6000()
@@ -181,9 +181,9 @@
 -	logger -s "smp_affinity: WAN_IF_LIST = $WAN_IF_LIST"
 -	logger -s "smp_affinity: BRIDGE_LIST = $BRIDGE_MEMBERS"
 -	logger -s "smp_affinity: WIFI_IF_LIST = $WIFI_IF_LIST"
-+	log_msg "[smp_affinity] WAN_IF_LIST = $WAN_IF_LIST"
-+	log_msg "[smp_affinity] BRIDGE_LIST = $BRIDGE_MEMBERS"
-+	log_msg "[smp_affinity] WIFI_IF_LIST = $WIFI_IF_LIST"
++	log_msg "[smp_affinity] List of WAN interfaces: $WAN_IF_LIST"
++	log_msg "[smp_affinity] List of bridge interfaces: $BRIDGE_MEMBERS"
++	log_msg "[smp_affinity] List of WLAN interfaces: $WIFI_IF_LIST"
  	
  	# Please update the CPU binding in each cases.
  	# CPU#_AFFINITY="add binding irq number here"
@@ -192,7 +192,7 @@
  	#AX3000
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
 -		logger -s "smp_affinity: WED_ENABLE ON irq/iptable setting"
-+		log_msg "[smp_affinity] Settig up WED iptables rules"
++		log_msg "[WED] Setting up WED iptables rules"
  		#TCP Binding
  		iptables -D FORWARD -p tcp -m conntrack --ctstate	\
  				RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
@@ -202,8 +202,8 @@
  	fi
 -	logger -s "smp_affinity: CPU0_AFFINITY = $CPU0_AFFINITY"
 -	logger -s "smp_affinity: CPU1_AFFINITY = $CPU1_AFFINITY"
-+	log_msg "[smp_affinity] CPU0_AFFINITY = $CPU0_AFFINITY"
-+	log_msg "[smp_affinity] CPU1_AFFINITY = $CPU1_AFFINITY"
++	log_msg "[smp_affinity] CPU0 affinity is $CPU0_AFFINITY"
++	log_msg "[smp_affinity] CPU1 affinity is $CPU1_AFFINITY"
  }
  
  gl_mt3000()
@@ -213,8 +213,8 @@
  	fi
 -	logger -s "smp_affinity: CPU0_AFFINITY = $CPU0_AFFINITY"
 -	logger -s "smp_affinity: CPU1_AFFINITY = $CPU1_AFFINITY"
-+	log_msg "[smp_affinity] CPU0_AFFINITY = $CPU0_AFFINITY"
-+	log_msg "[smp_affinity] CPU1_AFFINITY = $CPU1_AFFINITY"
++	log_msg "[smp_affinity] CPU0 affinity is $CPU0_AFFINITY"
++	log_msg "[smp_affinity] CPU1 affinity is $CPU1_AFFINITY"
  }
  
  MT7622()
@@ -224,50 +224,50 @@
  
 -	logger -s "smp_affinity: CPU0_AFFINITY = $CPU0_AFFINITY"
 -	logger -s "smp_affinity: CPU1_AFFINITY = $CPU1_AFFINITY"
-+	log_msg "[smp_affinity] CPU0_AFFINITY = $CPU0_AFFINITY"
-+	log_msg "[smp_affinity] CPU1_AFFINITY = $CPU1_AFFINITY"
++	log_msg "[smp_affinity] CPU0 affinity is $CPU0_AFFINITY"
++	log_msg "[smp_affinity] CPU1 affinity is $CPU1_AFFINITY"
  }
  
  setup_model()
  {
  	board=$(board_name)
 -	logger -s "smp_affinity: Board name: $board"
-+	log_msg "[smp_affinity] Board name: $board"
++	log_msg "[smp_affinity] Board name is $board"
  	num_of_wifi=$NUM_WIFI_CARD
  
  	if [[ $board == *"7988"* ]]; then
 -		logger -s "smp_affinity: setup_model: MT7988 NUM_WIFI_CARD=$num_of_wifi"
-+		log_msg "[smp_affinity] setup_model: MT7988 NUM_WIFI_CARD=$num_of_wifi"
++		log_msg "[smp_affinity] Board model is MT7988. WLAN radio number is $num_of_wifi"
  		MT7988 $num_of_wifi
  	elif [[ $board == *"7986"* ]]; then
 -		logger -s "smp_affinity: setup_model: MT7986 NUM_WIFI_CARD=$num_of_wifi"
-+		log_msg "[smp_affinity] setup_model: MT7986 NUM_WIFI_CARD=$num_of_wifi"
++		log_msg "[smp_affinity] Board model is MT7986. WLAN radio number is $num_of_wifi"
  		MT7986 $num_of_wifi
  	elif [[ $board == *"gl-mt6000"* ]]; then
 -		logger -s "smp_affinity: setup_model: gl-mt6000 NUM_WIFI_CARD=$num_of_wifi"
 -			gl_mt6000 $num_of_wifi
-+		log_msg "[smp_affinity] setup_model: gl-mt6000 NUM_WIFI_CARD=$num_of_wifi"
++		log_msg "[smp_affinity] Board model is GL-MT6000. WLAN radio number is $num_of_wifi"
 +		gl_mt6000 $num_of_wifi
  	elif [[ $board == *"7981"* ]]; then
 -		logger -s "smp_affinity: setup_model: MT7981 NUM_WIFI_CARD=$num_of_wifi"
-+		log_msg "[smp_affinity] setup_model: MT7981 NUM_WIFI_CARD=$num_of_wifi"
++		log_msg "[smp_affinity] Board model is MT7981. WLAN radio number is $num_of_wifi"
  		MT7981 $num_of_wifi
  	elif [[ $board == *"gl-mt3000"* ]]; then
 -		logger -s "smp_affinity: setup_model: gl-mt3000 NUM_WIFI_CARD=$num_of_wifi"
 -			gl_mt3000 $num_of_wifi
-+		log_msg "[smp_affinity] setup_model: gl-mt3000 NUM_WIFI_CARD=$num_of_wifi"
++		log_msg "[smp_affinity] Board model is GL-MT3000. WLAN radio number is $num_of_wifi"
 +		gl_mt3000 $num_of_wifi
  	elif [[ $board == *"7622"* ]]; then
 -		logger -s "smp_affinity: setup_model: MT7622 NUM_WIFI_CARD=$num_of_wifi"
-+		log_msg "[smp_affinity] setup_model: MT7622 NUM_WIFI_CARD=$num_of_wifi"
++		log_msg "[smp_affinity] Board model is MT7622. WLAN radio number is $num_of_wifi"
  		MT7622 $num_of_wifi
  	elif [[ $board == *"bpi-r4"* ]]; then
 -		logger -s "smp_affinity: setup_model: bpi-r4 NUM_WIFI_CARD=$num_of_wifi"
-+		log_msg "[smp_affinity] setup_model: bpi-r4 NUM_WIFI_CARD=$num_of_wifi"
++		log_msg "[smp_affinity] Board model is BPI-R4. WLAN radio number is $num_of_wifi"
  		MT7988 $num_of_wifi
  	fi
  }
-@@ -591,25 +594,25 @@
+@@ -591,25 +594,26 @@
  
  set_rps_cpu_bitmap()
  {
@@ -279,25 +279,26 @@
  		cpu_bit=$((2 ** $num))
  		eval rps_list=\$CPU${num}_RPS
 -		logger -s "smp_affinity: # CPU$num: rps_list=$rps_list"
-+		log_msg "[smp_affinity] CPU$num: rps_list=$rps_list"
++		log_msg "[smp_affinity] CPU$num's RPS list is $rps_list"
  		for i in $rps_list; do
  			var=${VAR_PREFIX}_${i//'-'/_}
  			var=${var//'.'/_}
  			eval ifval=\$$var
 -			logger -s "smp_affinity: [var val before] \$$var=$ifval"
-+			log_msg "[smp_affinity] [var val before] $var=$ifval"
  			if [ -z "$ifval" ]; then
++				log_msg "[smp_affinity] Current RPS value for interface $var is empty"
  				eval $var=$cpu_bit
  			else
++				log_msg "[smp_affinity] Current RPS value for interface $var is $ifval"
  				eval $var=`expr $ifval + $cpu_bit`
  			fi
  			eval ifval=\$$var
 -			logger -s "smp_affinity: [rps val after]$i=$ifval"
-+			log_msg "[smp_affinity] [rps val after]$i=$ifval"
++			log_msg "[smp_affinity] New RPS value for interface $i is $ifval"
  		done
  		num=`expr $num + 1`
  	done
-@@ -618,7 +621,7 @@
+@@ -618,7 +622,7 @@
  # $1: The default rps value. If rps of the interface is not setup, set $1 to it
  set_rps_cpus()
  {
@@ -306,16 +307,16 @@
  	for i in $RPS_IF_LIST; do
  		var=${VAR_PREFIX}_${i//'-'/_}
  		var=${var//'.'/_}
-@@ -633,7 +636,7 @@
+@@ -633,7 +637,7 @@
  			if [ -n "$cpu_map" ]; then
  				for rxq in /sys/class/net/$i/queues/rx-*; do
  					[ -d "$rxq" ] || continue
 -					logger -s "smp_affinity: echo $cpu_map > $rxq/rps_cpus"
-+					log_msg "[smp_affinity] echo $cpu_map > $rxq/rps_cpus"
++					log_msg "[smp_affinity] Setting $cpu_map in $rxq RPS CPUs"
  					echo $cpu_map > "$rxq/rps_cpus"
  				done
  			fi
-@@ -643,27 +646,47 @@
+@@ -643,27 +647,46 @@
  
  set_smp_affinity()
  {
@@ -335,10 +336,9 @@
  			virq=$(get_virtual_irq $i)
  			#virq=$i
 -			logger -s "smp_affinity: irq p2v $i --> $virq"
-+			log_msg "[smp_affinity] IRQ p2v $i --> $virq"
++			log_msg "[smp_affinity] Physical IRQ is $i, virtual IRQ is $virq"
  			if [ ! -z $virq ]; then
 -				#logger -s "smp_affinity: echo $cpu_bit > /proc/irq/$virq/smp_affinity"
-+				#log_msg "[smp_affinity] echo $cpu_bit > /proc/irq/$virq/smp_affinity"
  				echo $cpu_bit > /proc/irq/$virq/smp_affinity
 +				case "$irqbalance_enabled: $irqbalance_excluded_irqs " in
 +					1:*" $virq "*) log_msg "[smp_affinity] IRQ $virq already excluded from irqbalance" ;;
@@ -364,7 +364,7 @@
 -logger -s "smp_affinity: # RPS and AFFINITY Setting"
 -logger -s "smp_affinity: # NUM_OF_CPU=$NUM_OF_CPU"
 +log_msg "[smp_affinity] Setting up RPS and affinity"
-+log_msg "[smp_affinity] NUM_OF_CPU=$NUM_OF_CPU"
++log_msg "[smp_affinity] Number of CPUs is $NUM_OF_CPU"
  VAR_PREFIX="autogen"
  get_if_info
  setup_model
@@ -386,7 +386,7 @@
  	mtk_offloading_enable=$(uci get advanced.@defaults[0].mtk_offloading_enable 2>/dev/null || echo "x")
  	if [ "$mtk_offloading_enable" == "1" ]; then
 -			logger -s "smp_affinity: Enabling mtk offloading"
-+			log_msg "[smp_affinity] Enabling mtk offloading"
++			log_msg "[smp_affinity] Enabling MTK offloading"
  			#TCP Binding
  			iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  			ip6tables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
@@ -395,11 +395,29 @@
  			ip6tables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  	elif [ "$mtk_offloading_enable" == 0 ]; then
 -			logger -s "smp_affinity: Disabling mtk offloading"
-+			log_msg "[smp_affinity] Disabling mtk offloading"
++			log_msg "[smp_affinity] Disabling MTK offloading"
  			#TCP Binding
  			iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  			ip6tables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -746,7 +769,7 @@
+@@ -824,7 +847,7 @@
+ 
+ 		if [ "$old_content" != "$new_line" ]; then
+ 			printf '%s\n' "$new_line" > "$MODULE_FILE"
+-			logger -t advanced_setup "updated $MODULE_FILE to '$new_line'; reboot required for WED mode change"
++			log_msg "[WED] $MODULE_FILE updated with '$new_line'. Reboot is required to change WED mode"
+ 			echo "0"
+ 			return 0
+ 		fi
+@@ -834,7 +857,7 @@
+ 		runtime_wed=$(cat /sys/module/mt7915e/parameters/wed_enable 2>/dev/null)
+ 		if { [ "$wed" = "1" ] && [ "$runtime_wed" != "Y" ]; } || \
+ 		   { [ "$wed" = "0" ] && [ "$runtime_wed" != "N" ]; }; then
+-			logger -t advanced_setup "mt7915e runtime WED state '$runtime_wed' differs from UCI '$wed'; reboot required"
++			log_msg "[WED] Current WED state is '$runtime_wed' and differs from saved setting, which is set to '$wed'. Reboot is required."
+ 			echo "0"
+ 			return 0
+ 		fi
+@@ -847,7 +870,7 @@
  {
  	local reprobe_ok=0
  
@@ -408,16 +426,16 @@
  
  	/sbin/wifi down >/dev/null 2>&1
  	sleep 2
-@@ -754,7 +777,7 @@
+@@ -855,7 +878,7 @@
  	if grep -q '^mt7915e ' /proc/modules 2>/dev/null; then
  		if ! /sbin/modprobe -r mt7915e >/dev/null 2>&1 && \
  		   ! /sbin/rmmod mt7915e >/dev/null 2>&1; then
 -			logger -t advanced_setup "failed to unload mt7915e; attempting to restore Wi-Fi"
-+			log_msg "[mt7915e] Failed to unload module. Attempting to re-enable Wi-Fi"
++			log_msg "[mt7915e] Failed to unload module. Attempting to re-enable WLAN"
  			/sbin/wifi up >/dev/null 2>&1
  			return 1
  		fi
-@@ -763,13 +786,13 @@
+@@ -864,13 +887,13 @@
  	sleep 2
  
  	if ! load_mt7915e_from_modules_file >/dev/null 2>&1; then
@@ -433,26 +451,24 @@
  		reprobe_ok=0
  	fi
  
-@@ -777,7 +800,7 @@
+@@ -878,13 +901,13 @@
  	sleep 3
  
  	if [ "$reprobe_ok" -ne 1 ]; then
 -		logger -t advanced_setup "mt7915e reprobe incomplete; Wi-Fi bring-up attempted as fallback"
-+		log_msg "[mt7915e] Module reload incomplete. Attempt to re-enable Wi-Fi was made"
++		log_msg "[mt7915e] Module reload incomplete. Attempt to re-enable WLAN was made"
  		return 1
  	fi
  
-@@ -786,7 +809,7 @@
- 	usb_setup
- 	hw_atf_setup
+ 	advanced_runtime_setup
  
 -	logger -t advanced_setup "mt7915e reprobe completed"
 +	log_msg "[mt7915e] Module reload completed"
  	return 0
  }
  
-@@ -797,7 +820,7 @@
- 	hwatf=$(uci get advanced.@defaults[0].hw_atf_enable 2>/dev/null || echo "0")
+@@ -915,7 +938,7 @@
+ 	esac
  
  	if [ "$atf" != "1" ] && [ "$hwatf" = "1" ]; then
 -		logger -t advanced_setup "HW-ATF requires ATF; forcing hw_atf_enable=0"
@@ -460,25 +476,49 @@
  		uci set advanced.@defaults[0].hw_atf_enable='0'
  		uci commit advanced
  		hwatf=0
-@@ -830,7 +853,7 @@
+@@ -949,7 +972,7 @@
  
  		if [ "$old_content" != "$new_line" ]; then
  			printf '%s\n' "$new_line" > "$MODULE_FILE"
--			logger -t advanced_setup "updated $MODULE_FILE to '$new_line'; mt7915e reprobe required for Airtime Fairness mode change"
+-			logger -t advanced_setup "updated $MODULE_FILE to '$new_line'; reboot required for Airtime Fairness mode change"
 +			log_msg "[HW-ATF] $MODULE_FILE updated with '$new_line'. mt7915e module reload is required to change Airtime Fairness mode"
- 			echo "1"
+ 			echo "0"
  			return 0
  		fi
-@@ -845,7 +868,7 @@
- 	sync_mt7915e_airtime_module_options >/dev/null
+@@ -957,7 +980,7 @@
  
- 	if [ -e "$FILE" ]; then
--		logger -s "smp_affinity: HW-ATF available"
-+		log_msg "[HW-ATF] HW-ATF is available"
+ 	if mt7915e_airtime_reboot_required; then
+ 		runtime_atf=$(cat /sys/module/mt7915e/parameters/expose_airtime_fairness 2>/dev/null)
+-		logger -t advanced_setup "mt7915e runtime Airtime Fairness state '$runtime_atf' differs from UCI '$atf'; reboot required"
++		log_msg "[HW-ATF] Current Airtime Fairness state is'$runtime_atf' and differs from saved setting, which is set to '$atf'. Reboot is required."
+ 	fi
+ 
+ 	echo "0"
+@@ -1014,20 +1037,20 @@
+ 	fi
+ 
+ 	if mt7915e_airtime_reboot_required; then
+-		logger -t advanced_setup "skipping HW-ATF runtime setup; reboot required for Airtime Fairness mode change"
++		log_msg "[HW-ATF] Skipping runtime setup. Reboot is required to change Aritime Fairness mode"
+ 		return 0
+ 	fi
+ 
+ 	for FILE in /sys/kernel/debug/ieee80211/*/mt76/vow; do
+ 		[ -e "$FILE" ] || continue
+ 		found=1
+-		logger -s "smp_affinity: HW-ATF available at $FILE"
++		log_msg "[HW-ATF] HW-ATF is available in $FILE"
  		if [ "$atf" = "1" ]; then
- 			echo 'vow_atf_en=1' > /sys/kernel/debug/ieee80211/phy0/mt76/vow
+ 			echo 'vow_atf_en=1' > "$FILE"
  		else
-@@ -870,7 +893,7 @@
+ 			echo 'vow_atf_en=0' > "$FILE"
+ 		fi
+-		
++
+ 		if [ "$atf" = "1" ] && [ "$hwatf" = "1" ]; then
+ 			echo 'vow_watf_en=1' > "$FILE"
+ 		else
+@@ -1057,7 +1080,7 @@
  		if [ $mtkutil_enable == 1 ]; then
  			if [ $hqos_enable == 1 ]; then
  				/sbin/mtkhnat
@@ -487,7 +527,7 @@
  			fi
  		fi
  	fi
-@@ -892,32 +915,32 @@
+@@ -1079,32 +1102,32 @@
  
  	case "$value" in
  		''|*[!0-9]*)
@@ -518,15 +558,15 @@
  	usbpower=$(uci get advanced.@defaults[0].usb_power 2>/dev/null || echo "x")
  	if [ $usbpower == 1 ]; then
 -		logger -s "advanced_setup: USB Power ON"
-+		log_msg "[USB] Turning on USB port power"
++		log_msg "[USB] Enabling USB port power"
  		echo 1 > /sys/devices/platform/regulator-usb-vbus/usb_vbus_enable
  	elif [ $usbpower == 0 ]; then
 -		logger -s "advanced_setup: USB Power OFF"
-+		log_msg "[USB] Turning off USB port power"
++		log_msg "[USB] Disabling USB port power"
  		echo 0 > /sys/devices/platform/regulator-usb-vbus/usb_vbus_enable
  	fi
  	
-@@ -926,40 +949,52 @@
+@@ -1113,24 +1136,36 @@
  	status2=$(cat "$USB2_PATH")
  	statuspower=$(cat "$USBPOWER_PATH")
  	if [ "$status2" -eq 1 ]; then
@@ -567,40 +607,41 @@
  		sleep $delay
  		echo 1 > /tmp/smp_affinity_started
  	fi
--		smp_mt76
--		enable_HQoS
--		cake_mq_setup
-+	smp_mt76
-+	enable_HQoS
-+	cake_mq_setup
- 	usb_setup
--		hw_atf_setup
+@@ -1139,49 +1174,51 @@
+ 	else
+ 		advanced_runtime_setup
+ 	fi
 -    logger -t advanced_setup "advanced_setup finished"
-+	hw_atf_setup
 +    log_msg "Finished"
  }
  
  reload_service() {
      trigger="$1"
      case "$trigger" in
-         atf)
--			logger -t advanced_setup "advanced_setup atf"
-+			log_msg "Reloading ATF settings"
- 			if [ "$(sync_mt7915e_airtime_module_options)" = "1" ]; then
- 				reprobe_mt7915e
- 			else
-@@ -967,35 +1002,36 @@
- 			fi
-             ;;
+-	        atf)
+-				logger -t advanced_setup "advanced_setup atf"
+-				sync_mt7915e_airtime_module_options >/dev/null
+-				if ! mt7915e_airtime_reboot_required; then
+-					hw_atf_setup
+-				fi
+-	            ;;
++		atf)
++			log_msg "Reloading HW-ATF settings"
++			sync_mt7915e_airtime_module_options >/dev/null
++			if ! mt7915e_airtime_reboot_required; then
++				hw_atf_setup
++			fi
++			;;
          usb)
 -			logger -t advanced_setup "advanced_setup usb"
 +			log_msg "Reloading USB settings"
              usb_setup
              ;;
-         wed)
+-	        wed)
 -			logger -t advanced_setup "advanced_setup wed"
-+			log_msg "Reloading WED"
- 			reprobe_mt7915e
++        wed)
++			log_msg "Reloading WED settings"
+ 			sync_mt7915e_wed_module_options >/dev/null
  			;;
  		cake)
 -			logger -t advanced_setup "advanced_setup cake"
@@ -617,17 +658,13 @@
  				sleep $delay
  				echo 1 > /tmp/smp_affinity_started
  			fi
--				smp_mt76
--				enable_HQoS
--				cake_mq_setup
--				usb_setup
--				hw_atf_setup
+ 			if [ "$(sync_mt7915e_module_options)" = "1" ]; then
+ 				reprobe_mt7915e
+ 			else
++				clean_irqbalance_config
+ 				advanced_runtime_setup
+ 			fi
 -			logger -t advanced_setup "advanced_setup finished"
-+			clean_irqbalance_config
-+			smp_mt76
-+			enable_HQoS
-+			usb_setup
-+			hw_atf_setup
              ;;
      esac
 +	log_msg "Finished"
@@ -637,43 +674,4 @@
 -    logger -t advanced_setup "No stop actions defined"
 +    #log_msg "No stop actions defined"
 +	clean_irqbalance_config
- }
---- a/feeds/packages/utils/irqbalance/files/irqbalance.init
-+++ b/feeds/packages/utils/irqbalance/files/irqbalance.init
-@@ -38,6 +38,14 @@
- 		procd_append_param command "-i $1"
- 	}
- 	config_list_foreach irqbalance banirq handle_banirq_value
-+	
-+	if [ -f /tmp/smp_affinity_irqs ]; then
-+		while read -r smp_affinity_irq; do
-+			if [ -n "$smp_affinity_irq" ]; then
-+				procd_append_param command "-i $smp_affinity_irq"
-+			fi
-+		done < /tmp/smp_affinity_irqs
-+	fi
- 
- 	# debug
- 	if [ "$debug" -gt 0 ]; then
---- a/package/network/config/netifd/files/etc/init.d/packet_steering
-+++ b/package/network/config/netifd/files/etc/init.d/packet_steering
-@@ -15,11 +15,13 @@
- 
- reload_service() {
- 	packet_steering="$(uci -q get "network.@globals[0].packet_steering")"
--	steering_flows="$(uci -q get "network.@globals[0].steering_flows")"
--	[ "${steering_flows:-0}" -gt 0 ] && opts="-l $steering_flows"
--	if [ -e "/usr/libexec/platform/packet-steering.sh" ]; then
--		/usr/libexec/platform/packet-steering.sh "$packet_steering"
--	else
--		/usr/libexec/network/packet-steering.uc $opts "$packet_steering"
-+	if [ -n "$packet_steering" ] && [ "$packet_steering" != "0" ]; then
-+		steering_flows="$(uci -q get "network.@globals[0].steering_flows")"
-+		[ "${steering_flows:-0}" -gt 0 ] && opts="-l $steering_flows"
-+		if [ -e "/usr/libexec/platform/packet-steering.sh" ]; then
-+			/usr/libexec/platform/packet-steering.sh "$packet_steering"
-+		else
-+			/usr/libexec/network/packet-steering.uc $opts "$packet_steering"
-+		fi
- 	fi
  }
