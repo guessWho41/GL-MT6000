@@ -607,7 +607,7 @@
  		sleep $delay
  		echo 1 > /tmp/smp_affinity_started
  	fi
-@@ -1139,49 +1174,51 @@
+@@ -1139,49 +1174,50 @@
  	else
  		advanced_runtime_setup
  	fi
@@ -654,7 +654,7 @@
  			if [ ! -f /tmp/smp_affinity_started ]; then
  				delay=$(uci get advanced.@advanced_packet_steering[0].advanced_packet_steering_delay 2>/dev/null || echo "30")
 -				logger -s "smp_affinity: Starting with delay of $delay sec."
-+				log_msg "[smp_affinity] Starting with delay of $delay sec."
++				log_msg "[smp_affinity] Starting with delay of $delay seconds"
  				sleep $delay
  				echo 1 > /tmp/smp_affinity_started
  			fi
@@ -672,6 +672,5 @@
  
  stop_service() {
 -    logger -t advanced_setup "No stop actions defined"
-+    #log_msg "No stop actions defined"
 +	clean_irqbalance_config
  }
