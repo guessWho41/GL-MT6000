@@ -135,9 +135,9 @@ jobs:
 
       - name: Commit build artifacts
         run: |
-          for artifact_dir in ./bin/*/; do
-            mv -v "${artifact_dir%/}" "${artifact_dir%/}-testing"
-          done
+          #for artifact_dir in ./bin/*/; do
+            #mv -v "${artifact_dir%/}" "${artifact_dir%/}-testing"
+          #done
           mv -v ./bin/* ./builder_repo/ ||:
           cd ./builder_repo
           git add .
