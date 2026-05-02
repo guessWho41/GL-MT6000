@@ -39,6 +39,17 @@ get_wg_interfaces() {
 	ubus call network.interface dump 2>/dev/null | jsonfilter -e '@.interface[@.proto="wireguard"].interface'
 }
 
+get_wg_networks() {
+	local iface device
+	iface="$1"
+	_wg_net4=""
+	_wg_net6=""
+	device=$(ubus call network.interface."$iface" status 2>/dev/null | jsonfilter -e '@.l3_device')
+	[ -n "$device" ] || return 1
+	_wg_net4=$(ip -4 route show dev "$device" scope link 2>/dev/null | awk '$1 ~ /\// {print $1; exit}')
+	_wg_net6=$(ip -6 route show dev "$device" 2>/dev/null | awk '$1 ~ /\// && $1 !~ /^fe80/ && /proto kernel/ {print $1; exit}')
+}
+
 get_or_assign_fwmark() {
 	local iface idx mark mmx_mask
 	iface="$1"
@@ -79,6 +90,98 @@ wg_set_rule() {
 	wg_del_rule "$mark"
 	ip rule add fwmark "$mark" lookup "$table" priority "$prio"
 	logger -t mwan3-wg "[$iface] WireGuard routing via table $table"
+}
+
+ensure_rule_before() {
+	local rule anchor sections section pos_rule pos_anchor idx
+	rule="$1"
+	anchor="$2"
+	sections="$3"
+	pos_rule=-1
+	pos_anchor=-1
+	idx=0
+	for section in $sections; do
+		[ "$section" = "$rule" ] && pos_rule=$idx
+		[ "$section" = "$anchor" ] && pos_anchor=$idx
+		idx=$((idx + 1))
+	done
+	[ "$pos_rule" -ge 0 ] && [ "$pos_anchor" -ge 0 ] && [ "$pos_rule" -lt "$pos_anchor" ] && return 0
+	[ "$pos_anchor" -ge 0 ] && uci reorder mwan3."$rule"="$pos_anchor"
+}
+
+get_default_rule_info() {
+	local sections section pos_v4 pos_v6 idx
+	sections="$1"
+	_first_default=""
+	pos_v4=-1
+	pos_v6=-1
+	idx=0
+	for section in $sections; do
+		[ "$section" = "default_rule_v4" ] && pos_v4=$idx
+		[ "$section" = "default_rule_v6" ] && pos_v6=$idx
+		idx=$((idx + 1))
+	done
+	if [ "$pos_v4" -ge 0 ] && [ "$pos_v6" -ge 0 ]; then
+		[ "$pos_v4" -lt "$pos_v6" ] && _first_default="default_rule_v4" || _first_default="default_rule_v6"
+	elif [ "$pos_v4" -ge 0 ]; then
+		_first_default="default_rule_v4"
+	elif [ "$pos_v6" -ge 0 ]; then
+		_first_default="default_rule_v6"
+	fi
+}
+
+ensure_wg_mwan3_rules() {
+	local wg_iface sections rule_v4 rule_v6 current_src current_policy changed
+	wg_iface="$1"
+	sections="$2"
+	changed=""
+
+	get_wg_networks "$wg_iface" || {
+		logger -t mwan3-wg "[$wg_iface] Could not resolve networks, skipping mwan3 rules"
+		return 1
+	}
+
+	[ -n "$_first_default" ] || {
+		logger -t mwan3-wg "[$wg_iface] No default mwan3 rules found, skipping"
+		return 1
+	}
+
+	rule_v4="vpn_${wg_iface}_v4"
+	rule_v6="vpn_${wg_iface}_v6"
+
+	if [ -n "$_wg_net6" ] && [ -n "$POLICY_V6" ]; then
+		current_src=$(uci -q get mwan3."$rule_v6".src_ip)
+		current_policy=$(uci -q get mwan3."$rule_v6".use_policy)
+		if [ "$current_src" != "$_wg_net6" ] || [ "$current_policy" != "$POLICY_V6" ]; then
+			uci set mwan3."$rule_v6"=rule
+			uci set mwan3."$rule_v6".family='ipv6'
+			uci set mwan3."$rule_v6".proto='all'
+			uci set mwan3."$rule_v6".src_ip="$_wg_net6"
+			uci set mwan3."$rule_v6".sticky='0'
+			uci set mwan3."$rule_v6".use_policy="$POLICY_V6"
+			ensure_rule_before "$rule_v6" "$_first_default" "$sections"
+			logger -t mwan3-wg "[$wg_iface] Updated mwan3 v6 rule: src=$_wg_net6 policy=$POLICY_V6"
+			changed=1
+		fi
+	fi
+
+	if [ -n "$_wg_net4" ] && [ -n "$POLICY_V4" ]; then
+		current_src=$(uci -q get mwan3."$rule_v4".src_ip)
+		current_policy=$(uci -q get mwan3."$rule_v4".use_policy)
+		if [ "$current_src" != "$_wg_net4" ] || [ "$current_policy" != "$POLICY_V4" ]; then
+			uci set mwan3."$rule_v4"=rule
+			uci set mwan3."$rule_v4".family='ipv4'
+			uci set mwan3."$rule_v4".proto='all'
+			uci set mwan3."$rule_v4".src_ip="$_wg_net4"
+			uci set mwan3."$rule_v4".sticky='0'
+			uci set mwan3."$rule_v4".use_policy="$POLICY_V4"
+			ensure_rule_before "$rule_v4" "$_first_default" "$sections"
+			logger -t mwan3-wg "[$wg_iface] Updated mwan3 v4 rule: src=$_wg_net4 policy=$POLICY_V4"
+			changed=1
+		fi
+	fi
+
+	[ -n "$changed" ]
 }
 
 _ddns_handle_section() {
@@ -187,6 +290,10 @@ case "$ACTION" in
 			WG_PRIO=$(ip rule show | awk '/iif/ {gsub(/:/, "", $1); n=$1+0; if (min=="" || n<min) min=n} END {print min}')
 			WG_PRIO=$((WG_PRIO - 1))
 
+			MWAN3_SECTIONS=$(uci show mwan3 | awk -F'[.=]' '/^mwan3\.[^.]+=[^.]+$/ {print $2}')
+			get_default_rule_info "$MWAN3_SECTIONS"
+
+			MWAN3_RULES_CHANGED=""
 			IDX=0
 			for WG_IFACE in $WG_IFACES; do
 				WG_MARK=$(get_or_assign_fwmark "$WG_IFACE" "$IDX")
@@ -196,7 +303,14 @@ case "$ACTION" in
 					continue
 				}
 				update_wg "$WG_IFACE" "$WG_MARK" "$WG_PRIO" "$PRIMARY_V4" "$BACKUP_V4"
+				ensure_wg_mwan3_rules "$WG_IFACE" "$MWAN3_SECTIONS" && MWAN3_RULES_CHANGED=1
 			done
+
+			if [ -n "$MWAN3_RULES_CHANGED" ]; then
+				uci commit mwan3
+				/etc/init.d/mwan3 reload
+			fi
 		fi
+
 		;;
 esac
