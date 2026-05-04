@@ -200,7 +200,7 @@ jobs:
           REMOTE_BRANCH="${{ needs.check_commits.outputs.remote_branch }}"
           LATEST_COMMIT="${{ needs.check_commits.outputs.latest_commit_sha }}"
           CONFIG_FILE="${{ inputs.config_file }}"
-          cat > /tmp/release_notes.md <<EOF
+          cat > ./release_notes.md <<EOF
           ### 🔄 Main Repository
           - **Repository:** [${REMOTE_REPOSITORY}](https://github.com/${REMOTE_REPOSITORY})
           - **Branch:** ${REMOTE_BRANCH}
@@ -227,7 +227,7 @@ jobs:
           - **ZRAM**
           - **Removed:** odhcpd and ppp
           EOF
-          gh release create "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" --latest --title "OpenWrt Custom Release for Flint 2 ($RELEASE_TAG)" --notes-file /tmp/release_notes.md ./release/*
+          gh release create "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" --latest --title "OpenWrt Custom Release for Flint 2 ($RELEASE_TAG)" --notes-file ./release_notes.md ./release/*
 
       - name: Clean up old releases
         run: |
