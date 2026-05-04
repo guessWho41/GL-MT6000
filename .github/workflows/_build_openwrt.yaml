@@ -34,10 +34,8 @@ jobs:
       - name: Check for new commits in pesa1234 repo
         id: check_commits
         run: |
-          # bare clone avoids redundant fetch; --filter=blob:none skips file content
           git clone --bare --filter=blob:none https://github.com/${{ env.REMOTE_REPOSITORY }}.git repo
           cd repo
-          # bare clones use refs/heads/* directly, no remotes/origin prefix
           remote_branch=$(git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/next-* | head -n1)
           if [ -z "$remote_branch" ]; then
             echo "*** COULD NOT DETERMINE remote_branch ***"
@@ -68,7 +66,6 @@ jobs:
       - name: Free disk space and install dependencies
         if: inputs.install_deps
         run: |
-          # large directory removal (~30+ GB, no apt involvement)
           sudo rm -rf \
             /usr/share/dotnet \
             /usr/local/lib/android \
@@ -84,10 +81,8 @@ jobs:
             /usr/local/share/edge_driver \
             /usr/local/share/gecko_driver
 
-          # docker images
           sudo docker image prune --all --force 2>/dev/null || true
 
-          # install what we need
           sudo apt-get update -y
           sudo apt-get install -y \
             build-essential clang flex bison g++ gawk \
@@ -95,7 +90,6 @@ jobs:
             libssl-dev python3-setuptools rsync swig unzip \
             zlib1g-dev file wget llvm
 
-          # remove browsers, large tools and unused packages
           sudo apt-get remove -y \
             firefox \
             google-chrome-stable \
@@ -106,7 +100,6 @@ jobs:
             'google-cloud-cli' 'kubectl' 'helm' \
             'ansible' 'snapd'
 
-          # single cleanup pass
           sudo apt-get autoremove --purge -y
           sudo apt-get clean -y
 
@@ -207,15 +200,11 @@ jobs:
           REMOTE_BRANCH="${{ needs.check_commits.outputs.remote_branch }}"
           LATEST_COMMIT="${{ needs.check_commits.outputs.latest_commit_sha }}"
           CONFIG_FILE="${{ inputs.config_file }}"
-          gh release create "$RELEASE_TAG" \
-            --repo "$TARGET_REPOSITORY" \
-            --latest \
-            --title "OpenWrt Custom Release for Flint 2 ($RELEASE_TAG)" \
-            --notes-file - <<EOF
+          cat > /tmp/release_notes.md <<EOF
           ### 🔄 Main Repository
           - **Repository:** [${REMOTE_REPOSITORY}](https://github.com/${REMOTE_REPOSITORY})
           - **Branch:** ${REMOTE_BRANCH}
-          - **Commit:** ${LATEST_COMMIT}
+          - **Commit:** ${LATEST_COMMIT}          
 
           ### 📝 Build Information
           - **Target:** [Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
@@ -238,6 +227,7 @@ jobs:
           - **ZRAM**
           - **Removed:** odhcpd and ppp
           EOF
+          gh release create "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" --latest --title "OpenWrt Custom Release for Flint 2 ($RELEASE_TAG)" --notes-file /tmp/release_notes.md ./release/*
 
       - name: Clean up old releases
         run: |
