@@ -28,37 +28,36 @@ jobs:
     runs-on: ${{ inputs.check_runner }}
     outputs:
       remote_branch: ${{ steps.check_commits.outputs.remote_branch }}
-      release_prefix: ${{ steps.check_commits.outputs.release_prefix }}
       new_commits: ${{ steps.check_commits.outputs.new_commits }}
       latest_commit_sha: ${{ steps.check_commits.outputs.latest_commit_sha }}
     steps:
       - name: Check for new commits in pesa1234 repo
         id: check_commits
         run: |
-          git clone --filter=blob:none --no-checkout https://github.com/${{ env.REMOTE_REPOSITORY }}.git repo
+          # bare clone avoids redundant fetch; --filter=blob:none skips file content
+          git clone --bare --filter=blob:none https://github.com/${{ env.REMOTE_REPOSITORY }}.git repo
           cd repo
-          git fetch --prune origin "+refs/heads/*:refs/remotes/origin/*"
-          remote_branch=$(git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/remotes/origin/next-* | head -n1 | sed 's|origin/||')
+          # bare clones use refs/heads/* directly, no remotes/origin prefix
+          remote_branch=$(git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/next-* | head -n1)
           if [ -z "$remote_branch" ]; then
             echo "*** COULD NOT DETERMINE remote_branch ***"
             exit 1
           fi
-          latest_commit_sha=$(git rev-parse "origin/${remote_branch}")
+          latest_commit_sha=$(git rev-parse "${remote_branch}")
           if [ -z "$latest_commit_sha" ]; then
             echo "*** COULD NOT GET latest_commit_sha FROM remote_branch=$remote_branch ***"
             exit 1
           fi
-          if gh api "repos/$TARGET_REPOSITORY/releases/latest" --jq .body 2>/dev/null | grep -q "${latest_commit_sha}"; then
-            echo "new_commits=false" >> $GITHUB_OUTPUT
+          latest_body=$(gh api "repos/$TARGET_REPOSITORY/releases/latest" --jq .body 2>/dev/null || true)
+          if echo "$latest_body" | grep -q "${latest_commit_sha}"; then
+            echo "new_commits=false" >> "$GITHUB_OUTPUT"
           else
-            echo "new_commits=true" >> $GITHUB_OUTPUT
+            echo "new_commits=true" >> "$GITHUB_OUTPUT"
           fi
-          release_prefix="${remote_branch%.rss*}"
           {
             echo "remote_branch=${remote_branch}"
-            echo "release_prefix=${release_prefix}"
             echo "latest_commit_sha=${latest_commit_sha}"
-          } | tee -a $GITHUB_OUTPUT
+          } | tee -a "$GITHUB_OUTPUT"
 
   build:
     name: Build OpenWrt
@@ -66,13 +65,57 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || needs.check_commits.outputs.new_commits == 'true'
     runs-on: ${{ inputs.build_runner }}
     steps:
-      - name: Install dependencies
+      - name: Free disk space and install dependencies
         if: inputs.install_deps
         run: |
-          sudo apt remove -y '*firefox*' '*chrome*' '*php*' '*microsoft-edge*' '*chromium*'
-          sudo apt update -y && sudo apt upgrade -y
-          sudo apt install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib gettext git libncurses5-dev libssl-dev python3-setuptools rsync swig unzip zlib1g-dev file wget llvm
-          sudo apt autoremove --purge -y && sudo apt clean -y
+          # large directory removal (~30+ GB, no apt involvement)
+          sudo rm -rf \
+            /usr/share/dotnet \
+            /usr/local/lib/android \
+            /opt/ghc \
+            /opt/hostedtoolcache \
+            /usr/share/swift \
+            /usr/local/julia* \
+            /usr/local/share/powershell \
+            /usr/share/java \
+            /home/linuxbrew \
+            /usr/share/miniconda \
+            /usr/local/share/chromedriver-linux64 \
+            /usr/local/share/edge_driver \
+            /usr/local/share/gecko_driver
+
+          # docker images
+          sudo docker image prune --all --force 2>/dev/null || true
+
+          # install what we need
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            build-essential clang flex bison g++ gawk \
+            gcc-multilib g++-multilib gettext libncurses5-dev \
+            libssl-dev python3-setuptools rsync swig unzip \
+            zlib1g-dev file wget llvm
+
+          # remove browsers, large tools and unused packages
+          sudo apt-get remove -y \
+            firefox \
+            google-chrome-stable \
+            microsoft-edge-stable \
+            chromium-browser \
+            azure-cli mono-devel libgl1-mesa-dri \
+            '*mysql*' '*postgresql*' '*mongodb*' \
+            'google-cloud-cli' 'kubectl' 'helm' \
+            'ansible' 'snapd'
+
+          # single cleanup pass
+          sudo apt-get autoremove --purge -y
+          sudo apt-get clean -y
+
+          df -h
+
+      - name: Configure Git identity
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
 
       - name: Checkout remote repository
         uses: actions/checkout@v6
@@ -90,8 +133,7 @@ jobs:
         run: |
           ./scripts/feeds update -a
           ./scripts/feeds install -a
-          rm -rf ./feeds/packages/net/mwan3
-          rm -rf ./feeds/luci/applications/luci-app-mwan3
+          rm -rf ./feeds/packages/net/mwan3 ./feeds/luci/applications/luci-app-mwan3
 
       - name: Checkout mwan3 nftables repository
         uses: actions/checkout@v6
@@ -107,10 +149,12 @@ jobs:
 
       - name: Setup configuration and custom files
         run: |
-          cp -v ./builder_repo/config/${{ inputs.config_file }} .config
-          cp -rv ./builder_repo/files ./
-          cp -rv ./builder_repo/patches ./
-          for file in $(find ./patches -name "*.patch" | sort); do patch -f -p1 -i ${file}; done
+          cp -v "./builder_repo/config/${{ inputs.config_file }}" .config
+          rsync -a ./builder_repo/files/ ./
+          rsync -a ./builder_repo/patches/ ./patches/
+          while IFS= read -r -d '' file; do
+            patch -f -p1 -i "${file}"
+          done < <(find ./patches -name "*.patch" -print0 | sort -z)
           make defconfig
 
       - name: Build firmware
@@ -126,12 +170,12 @@ jobs:
             make -j1 V=s
           }
           mkdir -p ./release
-          find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} ./release/ \; ||:
-          mv -v .config release/full.config ||:
-          cd ./release && find -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \; ||:
+          find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} ./release/ \;
+          mv -v .config release/full.config
+          cd ./release && find -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \;
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@7
+        uses: actions/upload-artifact@v7
         with:
           name: gl-mt6000-firmware
           path: ./release/*
@@ -139,40 +183,43 @@ jobs:
       - name: Get release info
         run: |
           version=$(find ./bin -type f -iname 'version.buildinfo' -print -quit | xargs -r cat | tr -d '\n')
+          if [ -z "$version" ]; then
+            echo "*** version.buildinfo not found ***"
+            exit 1
+          fi
           RELEASE_TAG="$(date +%F)_${version}_${{ needs.check_commits.outputs.remote_branch }}"
           echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
 
-      - name: Configure Git identity
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-
       - name: Commit build artifacts
         run: |
-          mv -v ./bin/* ./builder_repo/ ||:
+          mv -v ./bin/* ./builder_repo/
           cd ./builder_repo
           git add .
           git diff --cached --quiet || git commit -m "$RELEASE_TAG"
           git push origin main
-          cd ..
 
       - name: Create release
         run: |
           if gh release view "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" >/dev/null 2>&1; then
             gh release delete "$RELEASE_TAG" --cleanup-tag -y --repo "$TARGET_REPOSITORY"
           fi
+          REMOTE_REPOSITORY="${{ env.REMOTE_REPOSITORY }}"
+          REMOTE_BRANCH="${{ needs.check_commits.outputs.remote_branch }}"
+          LATEST_COMMIT="${{ needs.check_commits.outputs.latest_commit_sha }}"
+          CONFIG_FILE="${{ inputs.config_file }}"
           gh release create "$RELEASE_TAG" \
             --repo "$TARGET_REPOSITORY" \
             --latest \
             --title "OpenWrt Custom Release for Flint 2 ($RELEASE_TAG)" \
-            --notes "### 🔄 Main Repository
-          - **Repository:** [${{ env.REMOTE_REPOSITORY }}](https://github.com/${{ env.REMOTE_REPOSITORY }})
-          - **Branch:** ${{ needs.check_commits.outputs.remote_branch }}
-          - **Commit:** ${{ needs.check_commits.outputs.latest_commit_sha }}
-          
+            --notes-file - <<EOF
+          ### 🔄 Main Repository
+          - **Repository:** [${REMOTE_REPOSITORY}](https://github.com/${REMOTE_REPOSITORY})
+          - **Branch:** ${REMOTE_BRANCH}
+          - **Commit:** ${LATEST_COMMIT}
+
           ### 📝 Build Information
           - **Target:** [Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
-          - **Configuration:** ${{ inputs.config_file }}
+          - **Configuration:** ${CONFIG_FILE}
           - **Dropbear replaced with OpenSSH and SFTP with hardened config**
           - **Mbed TLS replaced with OpenSSL**
           - **uHTTPd replaced with nginx**
@@ -189,17 +236,15 @@ jobs:
           - **Usteer**
           - **Wireguard VPN with NPTv6**
           - **ZRAM**
-          - **Removed:** odhcpd and ppp" \
-            ./release/*
+          - **Removed:** odhcpd and ppp
+          EOF
 
       - name: Clean up old releases
         run: |
           cd ./builder_repo
-          git fetch origin main
-          git reset --hard origin/main
-          gh api repos/$TARGET_REPOSITORY/releases --paginate --jq '.[5:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
+          gh api "repos/$TARGET_REPOSITORY/releases" --paginate --jq '.[3:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id"
-            gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null ||:
+            gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null || true
             if [ -d "$tag" ]; then
               rm -rfv "$tag"
               git add -A
