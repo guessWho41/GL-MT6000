@@ -1,0 +1,20 @@
+name: Build OpenWrt testing for GL-MT6000 self-hosted
+
+permissions:
+  contents: write
+  actions: write
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: ./.github/workflows/_build_openwrt.yml
+    with:
+      config_file: mt6000_testing.config
+      check_runner: self-hosted
+      build_runner: self-hosted
+      install_deps: false
+    permissions:
+      contents: write
+      actions: write
