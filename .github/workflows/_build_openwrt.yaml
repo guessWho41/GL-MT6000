@@ -63,7 +63,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || needs.check_commits.outputs.new_commits == 'true'
     runs-on: ${{ inputs.build_runner }}
     steps:
-      - name: Free disk space and install dependencies
+      - name: Install dependencies and free disk space
         if: inputs.install_deps
         run: |
           sudo rm -rf \
