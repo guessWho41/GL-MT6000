@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    uses: ./.github/workflows/_build_openwrt.yml
+    uses: ./.github/workflows/_build_openwrt.yaml
     with:
       config_file: mt6000_testing.config
       check_runner: ubuntu-slim
