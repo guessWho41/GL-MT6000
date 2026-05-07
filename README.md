@@ -1,4 +1,4 @@
-GL.iNET Flint 2 (GL-MT6000) custom build with LuCi.
+GL.iNet Flint 2 (GL-MT6000) custom build with LuCi.
 
 Repository for building [Pesa1234's](https://forum.openwrt.org/u/pesa1234) [GL.iNET - MT 6000 custom build](https://github.com/pesa1234/MT6000_cust_build) based on [Cjom's](https://forum.openwrt.org/u/cjom) [GL-MT6000 custom OpenWrt firmware builder](https://github.com/cjom/gl-mt6000) with following customizations:
 
@@ -6,15 +6,15 @@ Repository for building [Pesa1234's](https://forum.openwrt.org/u/pesa1234) [GL.i
 - Mbed TLS relaced with OpenSSL
 - uHTTPd replaced with nginx
 - Wi-Fi UCODE scripts
-- Ad Block Fast
+- AdBlock-Fast
 - Bridger
-- DDNS
-- DNS Crypt Proxy
+- Dynamic DNS Client
+- dnscrypt-proxy 2
 - Irqbalance with exceptions set by smp_affinity
 - MWAN3 [nftables port](https://github.com/dl12345/mwan3) by [dl12345](https://forum.openwrt.org/u/dl12345)
 - TCP BBR
-- UPnP
-- Usteer
+- MiniUPnPd
+- usteer
 - Wireguard VPN with NPTv6
 - ZRAM
 - Removed: odhcpd and ppp
