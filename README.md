@@ -11,7 +11,8 @@ Repository for building [Pesa1234's](https://forum.openwrt.org/u/pesa1234) [GL.i
 - Dynamic DNS Client
 - dnscrypt-proxy 2
 - Irqbalance with exceptions set by smp_affinity
-- MWAN3 [nftables port](https://github.com/dl12345/mwan3) by [dl12345](https://forum.openwrt.org/u/dl12345)
+- mwan3 [nftables port](https://github.com/dl12345/mwan3) by [dl12345](https://forum.openwrt.org/u/dl12345)
+- **SQM**
 - TCP BBR
 - MiniUPnPd
 - usteer
