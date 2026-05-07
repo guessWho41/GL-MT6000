@@ -207,22 +207,22 @@ jobs:
           - **Commit:** ${LATEST_COMMIT}          
 
           ### 📝 Build Information
-          - **Target:** [Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
+          - **Target:** [GL.iNet Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
           - **Configuration:** ${CONFIG_FILE}
           - **Dropbear replaced with OpenSSH and SFTP with hardened config**
           - **Mbed TLS replaced with OpenSSL**
           - **uHTTPd replaced with nginx**
           - **Wi-Fi UCODE scripts**
-          - **Ad Block Fast**
+          - **AdBlock-Fastt**
           - **Bridger**
-          - **DDNS**
-          - **DNS Crypt Proxy**
+          - **Dynamic DNS Client**
+          - **dnscrypt-proxy 2**
           - **Irqbalance with exceptions set by smp_affinity**
-          - **MWAN3 nftables port**
+          - **mwan3 nftables port**
           - **SQM**
           - **TCP BBR**
-          - **UPnP**
-          - **Usteer**
+          - **MiniUPnPd**
+          - **usteer**
           - **Wireguard VPN with NPTv6**
           - **ZRAM**
           - **Removed:** odhcpd and ppp
