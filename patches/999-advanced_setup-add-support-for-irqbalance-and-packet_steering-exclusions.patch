@@ -674,6 +674,7 @@
 -    logger -t advanced_setup "No stop actions defined"
 +	clean_irqbalance_config
  }
+
 --- a/feeds/packages/utils/irqbalance/files/irqbalance.init
 +++ b/feeds/packages/utils/irqbalance/files/irqbalance.init
 @@ -38,6 +38,14 @@
@@ -691,6 +692,7 @@
  
  	# debug
  	if [ "$debug" -gt 0 ]; then
+
 --- a/package/network/config/netifd/files/etc/init.d/packet_steering
 +++ b/package/network/config/netifd/files/etc/init.d/packet_steering
 @@ -15,6 +15,7 @@
