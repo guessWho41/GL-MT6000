@@ -312,7 +312,7 @@
  				for rxq in /sys/class/net/$i/queues/rx-*; do
  					[ -d "$rxq" ] || continue
 -					logger -s "smp_affinity: echo $cpu_map > $rxq/rps_cpus"
-+					log_msg "[smp_affinity] Setting $cpu_map in $rxq RPS CPUs"
++					log_msg "[smp_affinity] Setting $cpu_map in $rxq/rps_cpus"
  					echo $cpu_map > "$rxq/rps_cpus"
  				done
  			fi
