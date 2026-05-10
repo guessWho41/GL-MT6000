@@ -122,10 +122,9 @@ jobs:
         with:
           path: "builder_repo"
 
-      - name: Update and install feeds
+      - name: Update feeds
         run: |
           ./scripts/feeds update -a
-          ./scripts/feeds install -a
           rm -rf ./feeds/packages/net/mwan3 ./feeds/luci/applications/luci-app-mwan3
 
       - name: Checkout mwan3 nftables repository
@@ -145,6 +144,9 @@ jobs:
         with:
           repository: NilsRo/usteer-ng
           path: "feeds/packages/net/usteer-ng"
+
+      - name: Install feeds
+        run: ./scripts/feeds install -a
 
       - name: Setup configuration and custom files
         run: |
