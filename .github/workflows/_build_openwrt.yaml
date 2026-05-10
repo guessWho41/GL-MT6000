@@ -212,29 +212,19 @@ jobs:
           ### 🔄 Main Repository
           - **Repository:** [${REMOTE_REPOSITORY}](https://github.com/${REMOTE_REPOSITORY})
           - **Branch:** ${REMOTE_BRANCH}
-          - **Commit:** ${LATEST_COMMIT}          
+          - **Commit:** ${LATEST_COMMIT}
 
           ### 📝 Build Information
-          - **Target:** [GL.iNet Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
+          - **Target:** [Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
           - **Configuration:** ${CONFIG_FILE}
-          - **Dropbear replaced with OpenSSH and SFTP with hardened config**
-          - **Mbed TLS replaced with OpenSSL**
-          - **uHTTPd replaced with nginx**
-          - **Wi-Fi UCODE scripts**
-          - **AdBlock-Fastt**
-          - **Bridger**
-          - **Dynamic DNS Client**
-          - **dnscrypt-proxy 2**
-          - **Irqbalance with exceptions set by smp_affinity**
-          - **mwan3 nftables port**
-          - **SQM**
-          - **TCP BBR**
-          - **MiniUPnPd**
-          - **usteer**
-          - **Wireguard VPN with NPTv6**
-          - **ZRAM**
-          - **Removed:** odhcpd and ppp
           EOF
+          package_list=$(sed -n '/<!-- package-list-start -->/,/<!-- package-list-end -->/{ /<!--/d; p }' ./builder_repo/README.md)
+          if [ -z "$package_list" ]; then
+            echo "WARNING: package list section not found in README.md"
+            echo "- *package list not found in README.md*" >> ./release_notes.md
+          else
+            echo "$package_list" >> ./release_notes.md
+          fi
           gh release create "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" --latest --title "OpenWrt Custom Release for Flint 2 ($RELEASE_TAG)" --notes-file ./release_notes.md ./release/*
 
       - name: Clean up old releases
