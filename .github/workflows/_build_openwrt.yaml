@@ -146,7 +146,9 @@ jobs:
           path: "feeds/packages/net/usteer-ng"
 
       - name: Install feeds
-        run: ./scripts/feeds install -a
+        run: |
+          ./scripts/feeds update packages
+          ./scripts/feeds install -a
 
       - name: Setup configuration and custom files
         run: |
