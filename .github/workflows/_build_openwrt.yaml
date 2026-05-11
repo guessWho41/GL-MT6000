@@ -217,7 +217,7 @@ jobs:
           - **Commit:** ${LATEST_COMMIT}
 
           ### 📝 Build Information
-          - **Target:** [Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
+          - **Target:** [GL.iNet Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
           - **Configuration:** ${CONFIG_FILE}
           EOF
           package_list=$(sed -n '/<!-- package-list-start -->/,/<!-- package-list-end -->/{ /<!--/d; p }' ./builder_repo/README.md)
