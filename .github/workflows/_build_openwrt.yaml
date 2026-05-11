@@ -145,9 +145,9 @@ jobs:
           repository: NilsRo/usteer-ng
           path: "feeds/packages/net/usteer-ng"
 
-      - name: Install feeds
+      - name: Refresh feed index and install packages
         run: |
-          ./scripts/feeds update packages
+          ./scripts/feeds update -i packages luci
           ./scripts/feeds install -a
 
       - name: Setup configuration and custom files
