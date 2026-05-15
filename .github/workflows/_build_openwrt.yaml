@@ -90,15 +90,15 @@ jobs:
             libssl-dev python3-setuptools rsync swig unzip \
             zlib1g-dev file wget llvm
 
-          sudo apt-get remove -y \
-            firefox \
-            google-chrome-stable \
-            microsoft-edge-stable \
-            chromium-browser \
-            azure-cli mono-devel libgl1-mesa-dri \
-            '*mysql*' '*postgresql*' '*mongodb*' \
-            'google-cloud-cli' 'kubectl' 'helm' \
-            'ansible' 'snapd'
+          #sudo apt-get remove -y \
+            #firefox \
+            #google-chrome-stable \
+            #microsoft-edge-stable \
+            #chromium-browser \
+            #azure-cli mono-devel libgl1-mesa-dri \
+            #'*mysql*' '*postgresql*' '*mongodb*' \
+            #'google-cloud-cli' 'kubectl' 'helm' \
+            #'ansible' 'snapd'
 
           sudo apt-get autoremove --purge -y
           sudo apt-get clean -y
