@@ -90,11 +90,11 @@ jobs:
             libssl-dev python3-setuptools rsync swig unzip \
             zlib1g-dev file wget llvm
 
-          #sudo apt-get remove -y \
-            #firefox \
-            #google-chrome-stable \
-            #microsoft-edge-stable \
-            #chromium-browser \
+          sudo apt-get remove -y \
+            firefox \
+            google-chrome-stable \
+            microsoft-edge-stable \
+            chromium-browser
             #azure-cli mono-devel libgl1-mesa-dri \
             #'*mysql*' '*postgresql*' '*mongodb*' \
             #'google-cloud-cli' 'kubectl' 'helm' \
@@ -109,6 +109,20 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
+
+      - name: Cache ccache
+        if: inputs.install_deps
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ needs.check_commits.outputs.remote_branch }}
+
+      - name: Configure ccache
+        run: echo "CCACHE_DIR=$HOME/.cache/ccache" >> $GITHUB_ENV
+
+      - name: Set ccache max size for GitHub-hosted runner
+        if: inputs.install_deps
+        run: ccache --set-config=max_size=10G
 
       - name: Checkout remote repository
         uses: actions/checkout@v6
@@ -176,6 +190,8 @@ jobs:
           find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} ./release/ \;
           mv -v .config release/full.config
           cd ./release && find -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \;
+
+          ccache --show-stats
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
