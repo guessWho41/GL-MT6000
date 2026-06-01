@@ -115,7 +115,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.cache/ccache
-          key: ccache-${{ needs.check_commits.outputs.remote_branch }}
+          key: ccache-${{ env.REMOTE_REPOSITORY }}
 
       - name: Configure ccache
         run: echo "CCACHE_DIR=$HOME/.cache/ccache" >> $GITHUB_ENV
