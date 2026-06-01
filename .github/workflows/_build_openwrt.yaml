@@ -118,11 +118,10 @@ jobs:
           key: ccache-${{ env.REMOTE_REPOSITORY }}
 
       - name: Configure ccache
-        run: echo "CCACHE_DIR=$HOME/.cache/ccache" >> $GITHUB_ENV
-
-      - name: Set ccache max size for GitHub-hosted runner
-        if: inputs.install_deps
-        run: ccache --set-config=max_size=10G
+        run: |
+          echo "CCACHE_DIR=$HOME/.cache/ccache" >> $GITHUB_ENV
+          ccache --set-config=max_size=10G
+          ccache -p
 
       - name: Checkout remote repository
         uses: actions/checkout@v6
@@ -175,9 +174,7 @@ jobs:
           make defconfig
 
       - name: Build firmware
-        run: |
-          ccache -p
-          
+        run: |          
           #make download -j$(nproc) || {
             #echo "Retrying..."
             #sleep 30
