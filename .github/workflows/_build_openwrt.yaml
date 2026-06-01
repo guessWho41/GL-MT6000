@@ -117,11 +117,12 @@ jobs:
           path: ~/.cache/ccache
           key: ccache-${{ env.REMOTE_REPOSITORY }}
 
-      - name: Configure ccache
+      - name: Set ccache max size for GitHub-hosted runner
+        if: inputs.install_deps
         run: |
-          echo "CONFIG_CCACHE_DIR=\"$HOME/.cache/ccache\"" >> .config
-          #ccache --set-config=compression_level=6
-          #ccache --set-config=max_size=10G
+          echo "CCACHE_DIR=$HOME/.cache/ccache" >> $GITHUB_ENV
+          ccache --set-config=compression_level=6
+          ccache --set-config=max_size=10G
 
       - name: Checkout remote repository
         uses: actions/checkout@v6
@@ -166,6 +167,7 @@ jobs:
       - name: Setup configuration and custom files
         run: |
           cp -v "./builder_repo/config/${{ inputs.config_file }}" .config
+          echo "CONFIG_CCACHE_DIR=\"$HOME/.cache/ccache\"" >> .config
           rsync -a ./builder_repo/files/ ./
           rsync -a ./builder_repo/patches/ ./patches/
           while IFS= read -r -d '' file; do
@@ -192,7 +194,7 @@ jobs:
           mv -v .config release/full.config
           cd ./release && find -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \;
 
-          ccache -s -d $CCACHE_DIR
+          ccache -s
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
