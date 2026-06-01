@@ -14,7 +14,6 @@ jobs:
       config_file: mt6000_testing.config
       check_runner: ubuntu-slim
       build_runner: ubuntu-latest
-      install_deps: true
     permissions:
       contents: write
       actions: write
