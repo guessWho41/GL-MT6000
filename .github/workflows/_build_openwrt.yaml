@@ -176,6 +176,8 @@ jobs:
 
       - name: Build firmware
         run: |
+          ccache -p
+          
           make download -j$(nproc) || {
             echo "Retrying..."
             sleep 30
