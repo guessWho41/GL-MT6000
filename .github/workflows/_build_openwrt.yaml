@@ -119,8 +119,9 @@ jobs:
 
       - name: Configure ccache
         run: |
-          echo "CCACHE_DIR=$HOME/.cache/ccache" >> $GITHUB_ENV
-          #ccache -M 10G
+          echo "CONFIG_CCACHE_DIR=\"$HOME/.cache/ccache\"" >> .config
+          #ccache --set-config=compression_level=6
+          #ccache --set-config=max_size=10G
 
       - name: Checkout remote repository
         uses: actions/checkout@v6
