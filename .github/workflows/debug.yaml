@@ -1,0 +1,21 @@
+name: Debug release count
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_REPOSITORY: "${{ github.repository }}"
+    steps:
+      - name: List releases
+        run: |
+          echo "--- All releases ---"
+          gh api "repos/$TARGET_REPOSITORY/releases" --paginate --jq '.[] | "\(.id) \(.tag_name)"'
+          echo "--- Would be deleted (keeping 3) ---"
+          gh api "repos/$TARGET_REPOSITORY/releases" --paginate --jq '.[3:] | .[] | "\(.id) \(.tag_name)"'
