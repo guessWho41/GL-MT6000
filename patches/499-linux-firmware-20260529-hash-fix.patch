@@ -1,0 +1,10 @@
+--- a/package/firmware/linux-firmware/Makefile
++++ b/package/firmware/linux-firmware/Makefile
+@@ -15,7 +15,7 @@
+ PKG_SOURCE_PROTO:=git
+ PKG_SOURCE_DATE:=2026-05-29
+ PKG_SOURCE_VERSION:=890cc006d8fa09d036247f5fed2435aa6dd8333a
+-PKG_MIRROR_HASH:=a335e17e8ef1721a9cd5c66d90adfb5643929faab69bfb6a8f4041f66e70b8c7
++PKG_MIRROR_HASH:=d231cabd9c1e800010b3540de1d4c3090bb72efff2a1b24ab77b89a48518bdb1
+ 
+ PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
