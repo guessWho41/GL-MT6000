@@ -191,7 +191,7 @@ jobs:
           mv -v .config release/full.config
           cd ./release && find -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \;
 
-          ccache --show-stats
+          ccache -s -d $CCACHE_DIR
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
