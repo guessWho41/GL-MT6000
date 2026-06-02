@@ -1,4 +1,4 @@
-name: Build on GitHub-hosted runner
+name: Build (GitHub-hosted)
 
 permissions:
   contents: write
