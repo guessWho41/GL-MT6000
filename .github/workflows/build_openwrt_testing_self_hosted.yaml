@@ -9,6 +9,7 @@ on:
 
 jobs:
   build:
+    name: Build OpenWrt testing for GL-MT6000 self-hosted
     uses: ./.github/workflows/_build_openwrt.yaml
     with:
       config_file: mt6000_testing.config
