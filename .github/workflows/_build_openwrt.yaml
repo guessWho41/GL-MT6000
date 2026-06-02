@@ -119,6 +119,7 @@ jobs:
           ccache --set-config=cache_dir=$HOME/.cache/ccache
           ccache --set-config=compression_level=6
           ccache --set-config=max_size=10G
+          ccache --set-config=sloppiness=include_file_ctime,include_file_mtime,locale,time_macros
 
       - name: Checkout remote repository
         uses: actions/checkout@v6
