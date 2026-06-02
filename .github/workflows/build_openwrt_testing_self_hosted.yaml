@@ -1,4 +1,4 @@
-name: Build OpenWrt testing for GL-MT6000 self-hosted
+name: Build testing (self-hosted)
 
 permissions:
   contents: write
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Build OpenWrt testing for GL-MT6000 self-hosted
+    name: Build OpenWrt testing for GL-MT6000
     uses: ./.github/workflows/_build_openwrt.yaml
     with:
       config_file: mt6000_testing.config
