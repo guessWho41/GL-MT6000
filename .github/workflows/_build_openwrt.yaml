@@ -12,6 +12,10 @@ on:
       build_runner:
         required: true
         type: string
+      use_ccache:
+        required: false
+        type: boolean
+        default: false
 
 env:
   REMOTE_REPOSITORY: pesa1234/openwrt
@@ -106,15 +110,15 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-      - name: Cache ccache
-        if: runner.environment == 'github-hosted'
+      - name: Cache ccache (GitHub-hosted)
+        if: runner.environment == 'github-hosted' && inputs.use_ccache
         uses: actions/cache@v5
         with:
           path: ~/.cache/ccache
           key: ccache-${{ env.REMOTE_REPOSITORY }}
 
-      - name: Set ccache config for GitHub-hosted runner
-        if: runner.environment == 'github-hosted'
+      - name: Set ccache config (GitHub-hosted)
+        if: runner.environment == 'github-hosted' && inputs.use_ccache
         run: |
           ccache --set-config=cache_dir=$HOME/.cache/ccache
           ccache --set-config=compression_level=6
@@ -164,7 +168,11 @@ jobs:
       - name: Setup configuration and custom files
         run: |
           cp -v "./builder_repo/config/${{ inputs.config_file }}" .config
-          echo "CONFIG_CCACHE_DIR=\"$HOME/.cache/ccache\"" >> .config
+          if [ "${{ inputs.use_ccache }}" = "true" ]; then
+            echo "CONFIG_CCACHE=y" >> .config
+            echo "CONFIG_CCACHE_DIR=\"$HOME/.cache/ccache\"" >> .config
+            ccache -p
+          fi
           rsync -a ./builder_repo/files/ ./
           rsync -a ./builder_repo/patches/ ./patches/
           while IFS= read -r -d '' file; do
@@ -174,8 +182,6 @@ jobs:
 
       - name: Build firmware
         run: |
-          ccache -p
-
           make download -j$(nproc) || {
             echo "Retrying..."
             sleep 30
@@ -186,12 +192,13 @@ jobs:
             sleep 30
             make -j1 V=s
           }
+          if [ "${{ inputs.use_ccache }}" = "true" ]; then
+            ccache -s
+          fi
           mkdir -p ./release
           find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} ./release/ \;
           mv -v .config release/full.config
           cd ./release && find -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \;
-
-          ccache -s
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
