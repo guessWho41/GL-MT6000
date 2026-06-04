@@ -15,6 +15,7 @@ jobs:
       config_file: mt6000_testing.config
       check_runner: self-hosted
       build_runner: self-hosted
+      use_ccache: true
     permissions:
       contents: write
       actions: write
