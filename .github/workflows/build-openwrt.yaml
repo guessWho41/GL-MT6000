@@ -15,6 +15,7 @@ jobs:
       config_file: mt6000.config
       check_runner: ubuntu-slim
       build_runner: ubuntu-latest
+      use_ccache: true
     permissions:
       contents: write
       actions: write
