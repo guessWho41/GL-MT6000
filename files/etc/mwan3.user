@@ -30,6 +30,7 @@ MWAN3_STATUS=""
 IP_RULE_CACHE=""
 NET_DIRTY=0
 DDNS_DIRTY=0
+DDNS_RESTART=""
 _FWMARK=""
 DP_V4=""
 DP_V6=""
@@ -215,36 +216,77 @@ update_wg() {
 
 _ddns_target=""
 _ddns_family=""
+_ddns_changed=0
 
 _ddns_handle_section() {
-	local section="$1" enabled use_ipv6 current ip_source
+	local section="$1" enabled use_ipv6 ip_source bind_network cur
+
 	config_get_bool enabled "$section" enabled 0
 	[ "$enabled" = 1 ] || return
-	config_get use_ipv6 "$section" use_ipv6
-	if [ "$_ddns_family" = "ipv6" ]; then
-		[ "$use_ipv6" = "1" ] || return
-	else
-		[ "$use_ipv6" = "1" ] && return
-	fi
-	config_get current "$section" interface
-	[ "$current" != "$_ddns_target" ] || return
 
-	logger -t "$DDNS_TAG" "[$_ddns_family] '$section': $current -> $_ddns_target"
-	uci set "ddns.$section.interface=$_ddns_target"
-	config_get ip_source "$section" ip_source
+	config_get_bool use_ipv6 "$section" use_ipv6 0
+	if [ "$_ddns_family" = "ipv6" ]; then
+		[ "$use_ipv6" = 1 ] || return
+	else
+		[ "$use_ipv6" = 1 ] && return
+	fi
+
+	config_get ip_source "$section" ip_source network
+
 	case "$ip_source" in
-		network)   uci set "ddns.$section.ip_network=$_ddns_target" ;;
-		web)       uci set "ddns.$section.bind_network=$_ddns_target" ;;
-		interface) uci set "ddns.$section.ip_interface=$_ddns_target" ;;
-		*) logger -t "$DDNS_TAG" "[$_ddns_family] '$section': unknown ip_source, leaving network binding" ;;
+		network)
+			config_get cur "$section" ip_network
+			[ "$cur" = "$_ddns_target" ] && return
+			uci set "ddns.$section.ip_network=$_ddns_target"
+			DDNS_DIRTY=1
+			logger -t "$DDNS_TAG" "[$_ddns_family] '$section': ip_network ${cur:-unset} -> $_ddns_target"
+			;;
+		interface)
+			config_get cur "$section" ip_interface
+			[ "$cur" = "@$_ddns_target" ] && return
+			uci set "ddns.$section.ip_interface=@$_ddns_target"
+			DDNS_DIRTY=1
+			logger -t "$DDNS_TAG" "[$_ddns_family] '$section': ip_interface ${cur:-unset} -> @$_ddns_target"
+			;;
+		web)
+			config_get bind_network "$section" bind_network
+			if [ -n "$bind_network" ]; then
+				[ "$bind_network" = "$_ddns_target" ] && return
+				uci set "ddns.$section.bind_network=$_ddns_target"
+				DDNS_DIRTY=1
+				logger -t "$DDNS_TAG" "[$_ddns_family] '$section': bind_network $bind_network -> $_ddns_target"
+			else
+				[ "$_ddns_changed" = 1 ] || return
+				logger -t "$DDNS_TAG" "[$_ddns_family] '$section': re-detect via default route"
+			fi
+			;;
+		*)
+			[ "$_ddns_changed" = 1 ] || return
+			logger -t "$DDNS_TAG" "[$_ddns_family] '$section': ip_source '$ip_source' not handled, forcing re-detect"
+			;;
 	esac
-	DDNS_DIRTY=1
+
+	case " $DDNS_RESTART " in
+		*" $section "*) ;;
+		*) DDNS_RESTART="$DDNS_RESTART $section" ;;
+	esac
 }
 
 update_ddns() {
+	local statefile prev
 	_ddns_family="$1"
 	_ddns_target="$2"
 	[ -n "$_ddns_target" ] || return
+
+	statefile="/tmp/mwan3-ddns.${_ddns_family}.active"
+	prev=$(cat "$statefile" 2>/dev/null)
+	if [ "$prev" = "$_ddns_target" ]; then
+		_ddns_changed=0
+	else
+		_ddns_changed=1
+		printf '%s\n' "$_ddns_target" > "$statefile"
+	fi
+
 	config_foreach _ddns_handle_section service
 }
 
@@ -272,13 +314,13 @@ connected|disconnected)
 	if [ -f /etc/config/ddns ] && /etc/init.d/ddns enabled 2>/dev/null; then
 		config_load ddns
 		DDNS_DIRTY=0
+		DDNS_RESTART=""
 		update_ddns ipv4 "$ACTIVE_V4"
 		update_ddns ipv6 "$ACTIVE_V6"
-		[ "$DDNS_DIRTY" = 1 ] && {
-			logger -t "$DDNS_TAG" "applying DDNS changes"
-			uci commit ddns
-			/etc/init.d/ddns restart
-		}
+		[ "$DDNS_DIRTY" = 1 ] && uci commit ddns
+		for _ddns_s in $DDNS_RESTART; do
+			/etc/init.d/ddns restart "$_ddns_s"
+		done
 	fi
 
 	WG_IFACES=$(get_wg_interfaces)
