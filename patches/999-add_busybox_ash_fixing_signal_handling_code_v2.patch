@@ -3,7 +3,7 @@
 @@ -0,0 +1,36 @@
 +--- a/include/libbb.h
 ++++ b/include/libbb.h
-+@@ -751,7 +751,7 @@ int sigprocmask2(int how, sigset_t *set) FAST_FUNC;
++@@ -660,7 +660,7 @@ int sigprocmask2(int how, sigset_t *set) FAST_FUNC;
 + /* SIG_BLOCK all signals, return old set: */
 + int sigblockall(sigset_t *set) FAST_FUNC;
 + /* Standard handler which just records signo */
@@ -25,7 +25,7 @@
 + {
 +--- a/shell/ash.c
 ++++ b/shell/ash.c
-+@@ -9615,6 +9615,11 @@ dotrap(void)
++@@ -9608,6 +9608,11 @@ dotrap(void)
 +                savestatus = status;
 +        }
 +        pending_sig = 0;
