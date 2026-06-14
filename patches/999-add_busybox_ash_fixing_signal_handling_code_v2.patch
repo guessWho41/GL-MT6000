@@ -26,14 +26,14 @@
 +--- a/shell/ash.c
 ++++ b/shell/ash.c
 +@@ -9608,6 +9608,11 @@ dotrap(void)
-+                savestatus = status;
-+        }
-+        pending_sig = 0;
++		savestatus = status;
++	}
++	pending_sig = 0;
 ++#if ENABLE_FEATURE_EDITING
 ++// RAF: something can happen here which alter pending_sig value
 ++// but bb_got_signal is set by current the value of pending_sig
-++       bb_got_signal = pending_sig;
+++	bb_got_signal = pending_sig;
 ++#endif
-+        barrier();
-+ 
-+        TRACE(("dotrap entered\n"));
++	barrier();
++
++	TRACE(("dotrap entered\n"));
