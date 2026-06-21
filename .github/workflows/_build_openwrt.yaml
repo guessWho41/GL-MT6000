@@ -42,12 +42,12 @@ jobs:
           cd repo
           remote_branch=$(git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/next-* | head -n1)
           if [ -z "$remote_branch" ]; then
-            echo "*** COULD NOT DETERMINE remote_branch ***"
+            echo "*** Could not determine remote_branch ***"
             exit 1
           fi
           latest_commit_sha=$(git rev-parse "${remote_branch}")
           if [ -z "$latest_commit_sha" ]; then
-            echo "*** COULD NOT GET latest_commit_sha FROM remote_branch=$remote_branch ***"
+            echo "*** Could not get latest_commit_sha from remote_branch=$remote_branch ***"
             exit 1
           fi
           latest_body=$(gh api "repos/$TARGET_REPOSITORY/releases/latest" --jq .body 2>/dev/null || true)
@@ -106,7 +106,7 @@ jobs:
 
           sudo apt-get autoremove --purge -y
           sudo apt-get clean -y
-
+          echo "=== Disk space stats ==="
           df -h
 
       - name: Configure Git identity
@@ -176,7 +176,7 @@ jobs:
           if [ "${{ inputs.use_ccache }}" = "true" ]; then
             echo "CONFIG_CCACHE=y" >> .config
             echo "CONFIG_CCACHE_DIR=\"$HOME/.cache/ccache\"" >> .config
-            echo "===== Ccache config ====="
+            echo "=== Ccache config ==="
             ccache -p
           fi
           rsync -a ./builder_repo/files/ ./
@@ -199,7 +199,7 @@ jobs:
             make -j1 V=s
           }
           if [ "${{ inputs.use_ccache }}" = "true" ]; then
-            echo "===== Ccache stats ====="
+            echo "=== Ccache stats ==="
             ccache -s
           fi
           mkdir -p ./release
@@ -259,21 +259,25 @@ jobs:
           fi
           gh release create "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" --latest --title "OpenWrt Custom Release for Flint 2 ($RELEASE_TAG)" --notes-file ./release_notes.md ./release/*
 
-      - name: Show which builds will be kept and which deleted
-        run: |
-          KEEP="${{ inputs.keep }}"
-          echo "===== Releases that will be kept (newest $KEEP) ====="
-          gh api "repos/$TARGET_REPOSITORY/releases" --paginate --jq "sort_by(.created_at) | reverse | .[:$KEEP] | .[] | \"\(.created_at)  id=\(.id)  tag=\(.tag_name)\""
-          echo "===== Releases that will be deleted ====="
-          gh api "repos/$TARGET_REPOSITORY/releases" --paginate --jq "sort_by(.created_at) | reverse | .[$KEEP:] | .[] | \"\(.created_at)  id=\(.id)  tag=\(.tag_name)\""
-
       - name: Clean up old builds
         run: |
           KEEP="${{ inputs.keep }}"
+          for i in $(seq 1 10); do
+            if gh api "repos/$TARGET_REPOSITORY/releases" --jq '.[].tag_name' | grep -qx "$RELEASE_TAG"; then
+              break
+            fi
+            echo "=== Release list not yet consistent, retrying ($i)... ==="
+            sleep 3
+          done
+          releases=$(gh api "repos/$TARGET_REPOSITORY/releases" --paginate --jq 'sort_by(.created_at) | reverse')
+          echo "=== Releases that will be kept (newest $KEEP) ==="
+          echo "$releases" | jq -r ".[:$KEEP] | .[] | \"\(.created_at)  id=\(.id)  tag=\(.tag_name)\""
+          echo "=== Releases that will be deleted ==="
+          echo "$releases" | jq -r ".[$KEEP:] | .[] | \"\(.created_at)  id=\(.id)  tag=\(.tag_name)\""
           cd ./builder_repo
           git fetch origin main
           git reset --hard origin/main
-          gh api "repos/$TARGET_REPOSITORY/releases" --paginate --jq '.[$KEEP:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
+          echo "$releases" | jq -r ".[$KEEP:] | .[] | \"\(.id) \(.tag_name)\"" | while read id tag; do
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id" && gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null || true
             if [ -d "$tag" ]; then
               rm -rfv "$tag"
