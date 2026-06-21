@@ -16,6 +16,10 @@ on:
         required: false
         type: boolean
         default: false
+      keep:
+        required: false
+        default: "3"
+        type: string
 
 env:
   REMOTE_REPOSITORY: pesa1234/openwrt
@@ -171,6 +175,7 @@ jobs:
           if [ "${{ inputs.use_ccache }}" = "true" ]; then
             echo "CONFIG_CCACHE=y" >> .config
             echo "CONFIG_CCACHE_DIR=\"$HOME/.cache/ccache\"" >> .config
+            echo "===== Ccache config ====="
             ccache -p
           fi
           rsync -a ./builder_repo/files/ ./
@@ -252,12 +257,21 @@ jobs:
           fi
           gh release create "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" --latest --title "OpenWrt Custom Release for Flint 2 ($RELEASE_TAG)" --notes-file ./release_notes.md ./release/*
 
-      - name: Clean up old releases
+      - name: Show which builds will be kept and which deleted
         run: |
+          KEEP="${{ inputs.keep }}"
+          echo "===== Releases that will be kept (newest $KEEP) ====="
+          gh api "repos/$TARGET_REPOSITORY/releases" --paginate --jq "sort_by(.created_at) | reverse | .[:$KEEP] | .[] | \"\(.created_at)  id=\(.id)  tag=\(.tag_name)\""
+          echo "===== Releases that will be deleted ====="
+          gh api "repos/$TARGET_REPOSITORY/releases" --paginate --jq "sort_by(.created_at) | reverse | .[$KEEP:] | .[] | \"\(.created_at)  id=\(.id)  tag=\(.tag_name)\""
+
+      - name: Clean up old builds
+        run: |
+          KEEP="${{ inputs.keep }}"
           cd ./builder_repo
           git fetch origin main
           git reset --hard origin/main
-          gh api "repos/$TARGET_REPOSITORY/releases" --paginate --jq '.[3:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
+          gh api "repos/$TARGET_REPOSITORY/releases" --paginate --jq '.[$KEEP:] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id" && gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null || true
             if [ -d "$tag" ]; then
               rm -rfv "$tag"
