@@ -120,7 +120,9 @@ jobs:
         with:
           path: ~/.cache/ccache
           key: ccache-${{ env.REMOTE_REPOSITORY }}-${{ github.run_id }}
-          restore-keys: ccache-${{ env.REMOTE_REPOSITORY }}-
+          restore-keys: |
+            ccache-${{ env.REMOTE_REPOSITORY }}-
+            ccache-${{ env.REMOTE_REPOSITORY }}
 
       - name: Set ccache config (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.use_ccache
