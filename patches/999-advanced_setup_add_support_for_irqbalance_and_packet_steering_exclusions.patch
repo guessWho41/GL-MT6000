@@ -187,7 +187,15 @@
  	
  	# Please update the CPU binding in each cases.
  	# CPU#_AFFINITY="add binding irq number here"
-@@ -402,7 +405,7 @@
+@@ -385,7 +388,6 @@
+ 		CPU2_RPS="$WAN_IF_LIST $WIFI_IF_LIST"
+ 		CPU3_RPS="$WAN_IF_LIST $WIFI_IF_LIST"
+ 	fi
+-
+ }
+ 
+ MT7981()
+@@ -402,7 +404,7 @@
  
  	#AX3000
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
@@ -196,7 +204,7 @@
  		#TCP Binding
  		iptables -D FORWARD -p tcp -m conntrack --ctstate	\
  				RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -449,8 +452,8 @@
+@@ -449,8 +451,8 @@
  		CPU0_RPS="$RPS_IF_LIST"
  		CPU1_RPS="$RPS_IF_LIST"
  	fi
@@ -207,7 +215,7 @@
  }
  
  gl_mt3000()
-@@ -494,8 +497,8 @@
+@@ -494,8 +496,8 @@
  		CPU0_RPS="$RPS_IF_LIST"
  		CPU1_RPS="$RPS_IF_LIST"
  	fi
@@ -218,7 +226,7 @@
  }
  
  MT7622()
-@@ -540,36 +543,36 @@
+@@ -540,36 +542,36 @@
  		CPU1_RPS="$RPS_IF_LIST"
  	fi
  
@@ -267,7 +275,7 @@
  		MT7988 $num_of_wifi
  	fi
  }
-@@ -591,25 +594,26 @@
+@@ -591,25 +593,26 @@
  
  set_rps_cpu_bitmap()
  {
@@ -298,7 +306,7 @@
  		done
  		num=`expr $num + 1`
  	done
-@@ -618,7 +622,7 @@
+@@ -618,7 +621,7 @@
  # $1: The default rps value. If rps of the interface is not setup, set $1 to it
  set_rps_cpus()
  {
@@ -307,7 +315,7 @@
  	for i in $RPS_IF_LIST; do
  		var=${VAR_PREFIX}_${i//'-'/_}
  		var=${var//'.'/_}
-@@ -633,7 +637,7 @@
+@@ -633,7 +636,7 @@
  			if [ -n "$cpu_map" ]; then
  				for rxq in /sys/class/net/$i/queues/rx-*; do
  					[ -d "$rxq" ] || continue
@@ -316,7 +324,7 @@
  					echo $cpu_map > "$rxq/rps_cpus"
  				done
  			fi
-@@ -643,27 +647,46 @@
+@@ -643,27 +646,46 @@
  
  set_smp_affinity()
  {
@@ -368,7 +376,7 @@
  VAR_PREFIX="autogen"
  get_if_info
  setup_model
-@@ -676,10 +699,10 @@
+@@ -676,10 +698,10 @@
  		set_rps_cpu_bitmap
  		set_rps_cpus $DEFAULT_RPS
  	else
@@ -381,7 +389,7 @@
  fi
  
  
-@@ -691,7 +714,7 @@
+@@ -691,7 +713,7 @@
  {
  	mtk_offloading_enable=$(uci get advanced.@defaults[0].mtk_offloading_enable 2>/dev/null || echo "x")
  	if [ "$mtk_offloading_enable" == "1" ]; then
@@ -390,7 +398,7 @@
  			#TCP Binding
  			iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  			ip6tables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -702,7 +725,7 @@
+@@ -702,7 +724,7 @@
  			iptables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  			ip6tables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  	elif [ "$mtk_offloading_enable" == 0 ]; then
@@ -399,7 +407,7 @@
  			#TCP Binding
  			iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  			ip6tables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -824,7 +847,7 @@
+@@ -824,7 +846,7 @@
  
  		if [ "$old_content" != "$new_line" ]; then
  			printf '%s\n' "$new_line" > "$MODULE_FILE"
@@ -408,7 +416,7 @@
  			echo "0"
  			return 0
  		fi
-@@ -834,7 +857,7 @@
+@@ -834,7 +856,7 @@
  		runtime_wed=$(cat /sys/module/mt7915e/parameters/wed_enable 2>/dev/null)
  		if { [ "$wed" = "1" ] && [ "$runtime_wed" != "Y" ]; } || \
  		   { [ "$wed" = "0" ] && [ "$runtime_wed" != "N" ]; }; then
@@ -417,7 +425,7 @@
  			echo "0"
  			return 0
  		fi
-@@ -847,7 +870,7 @@
+@@ -847,7 +869,7 @@
  {
  	local reprobe_ok=0
  
@@ -426,7 +434,7 @@
  
  	/sbin/wifi down >/dev/null 2>&1
  	sleep 2
-@@ -855,7 +878,7 @@
+@@ -855,7 +877,7 @@
  	if grep -q '^mt7915e ' /proc/modules 2>/dev/null; then
  		if ! /sbin/modprobe -r mt7915e >/dev/null 2>&1 && \
  		   ! /sbin/rmmod mt7915e >/dev/null 2>&1; then
@@ -435,7 +443,7 @@
  			/sbin/wifi up >/dev/null 2>&1
  			return 1
  		fi
-@@ -864,13 +887,13 @@
+@@ -864,13 +886,13 @@
  	sleep 2
  
  	if ! load_mt7915e_from_modules_file >/dev/null 2>&1; then
@@ -451,7 +459,7 @@
  		reprobe_ok=0
  	fi
  
-@@ -878,13 +901,13 @@
+@@ -878,13 +900,13 @@
  	sleep 3
  
  	if [ "$reprobe_ok" -ne 1 ]; then
@@ -467,16 +475,7 @@
  	return 0
  }
  
-@@ -915,7 +938,7 @@
- 	esac
- 
- 	if [ "$atf" != "1" ] && [ "$hwatf" = "1" ]; then
--		logger -t advanced_setup "HW-ATF requires ATF; forcing hw_atf_enable=0"
-+		log_msg "[HW-ATF] HW-ATF requires ATF. Disabling HW-ATF"
- 		uci set advanced.@defaults[0].hw_atf_enable='0'
- 		uci commit advanced
- 		hwatf=0
-@@ -949,7 +972,7 @@
+@@ -941,7 +963,7 @@
  
  		if [ "$old_content" != "$new_line" ]; then
  			printf '%s\n' "$new_line" > "$MODULE_FILE"
@@ -485,7 +484,7 @@
  			echo "0"
  			return 0
  		fi
-@@ -957,7 +980,7 @@
+@@ -949,7 +971,7 @@
  
  	if mt7915e_airtime_reboot_required; then
  		runtime_atf=$(cat /sys/module/mt7915e/parameters/expose_airtime_fairness 2>/dev/null)
@@ -494,8 +493,8 @@
  	fi
  
  	echo "0"
-@@ -1014,20 +1037,20 @@
- 	fi
+@@ -1010,14 +1032,14 @@
+ 	esac
  
  	if mt7915e_airtime_reboot_required; then
 -		logger -t advanced_setup "skipping HW-ATF runtime setup; reboot required for Airtime Fairness mode change"
@@ -503,22 +502,15 @@
  		return 0
  	fi
  
- 	for FILE in /sys/kernel/debug/ieee80211/*/mt76/vow; do
+ 	for FILE in /sys/kernel/debug/ieee80211/*/mt76/vow_atf; do
  		[ -e "$FILE" ] || continue
  		found=1
--		logger -s "smp_affinity: HW-ATF available at $FILE"
-+		log_msg "[HW-ATF] HW-ATF is available in $FILE"
- 		if [ "$atf" = "1" ]; then
- 			echo 'vow_atf_en=1' > "$FILE"
- 		else
- 			echo 'vow_atf_en=0' > "$FILE"
- 		fi
--		
-+
- 		if [ "$atf" = "1" ] && [ "$hwatf" = "1" ]; then
- 			echo 'vow_watf_en=1' > "$FILE"
- 		else
-@@ -1057,7 +1080,7 @@
+-		logger -s "smp_affinity: HW-ATF runtime control available at $FILE"
++		log_msg "[HW-ATF] HW-ATF runtime control available in $FILE"
+ 		printf '%s\n' "$atf" > "$FILE"
+ 	done
+ 
+@@ -1042,11 +1064,10 @@
  		if [ $mtkutil_enable == 1 ]; then
  			if [ $hqos_enable == 1 ]; then
  				/sbin/mtkhnat
@@ -527,7 +519,11 @@
  			fi
  		fi
  	fi
-@@ -1079,32 +1102,32 @@
+-	
+ }
+ 
+ cake_mq_setup()
+@@ -1064,48 +1085,58 @@
  
  	case "$value" in
  		''|*[!0-9]*)
@@ -554,7 +550,8 @@
 +		log_msg "[USB] USB port speed is set to 3.0"
  		echo 0 > /sys/bus/usb/devices/usb2/2-0:1.0/usb2-port1/disable
  	fi
- 	
+-	
++
  	usbpower=$(uci get advanced.@defaults[0].usb_power 2>/dev/null || echo "x")
  	if [ $usbpower == 1 ]; then
 -		logger -s "advanced_setup: USB Power ON"
@@ -565,8 +562,10 @@
 +		log_msg "[USB] Disabling USB port power"
  		echo 0 > /sys/devices/platform/regulator-usb-vbus/usb_vbus_enable
  	fi
- 	
-@@ -1113,24 +1136,36 @@
+-	
++
+ 	USB2_PATH="/sys/bus/usb/devices/usb2/2-0:1.0/usb2-port1/disable"
+ 	USBPOWER_PATH="/sys/devices/platform/regulator-usb-vbus/usb_vbus_enable"
  	status2=$(cat "$USB2_PATH")
  	statuspower=$(cat "$USBPOWER_PATH")
  	if [ "$status2" -eq 1 ]; then
@@ -579,10 +578,9 @@
  	else
 -		logger -s "advanced_setup: USB is power OFF"
 +		log_msg "[USB] USB port power is disabled"
- 	fi
- 	
- }
- 
++	fi
++}
++
 +clean_irqbalance_config()
 +{
 +	if [ -f /tmp/smp_affinity_irqs ]; then
@@ -591,55 +589,56 @@
 +		if [ ! -e /tmp/run/procd.shutdown ] && /etc/init.d/irqbalance status >/dev/null 2>&1; then
 +			/etc/init.d/irqbalance restart
 +		fi
-+	fi
-+}
-+
+ 	fi
+-	
+ }
+ 
  service_triggers() {
-     procd_add_reload_trigger advanced network
+@@ -1113,54 +1144,57 @@
  }
  
  start_service() {
+-    if [ ! -f /tmp/smp_affinity_started ]; then
 +	log_msg "Starting"
-     if [ ! -f /tmp/smp_affinity_started ]; then
++	if [ ! -f /tmp/smp_affinity_started ]; then
  		delay=$(uci get advanced.@advanced_packet_steering[0].advanced_packet_steering_delay 2>/dev/null || echo "30")
 -		logger -s "smp_affinity: Starting with delay of $delay sec."
 +		log_msg "[smp_affinity] Starting with delay of $delay seconds"
  		sleep $delay
  		echo 1 > /tmp/smp_affinity_started
  	fi
-@@ -1139,49 +1174,50 @@
- 	else
- 		advanced_runtime_setup
- 	fi
+ 	sync_mt7915e_module_options >/dev/null
+ 	advanced_runtime_setup
 -    logger -t advanced_setup "advanced_setup finished"
-+    log_msg "Finished"
++	log_msg "Finished"
  }
  
  reload_service() {
-     trigger="$1"
-     case "$trigger" in
+-    trigger="$1"
+-    case "$trigger" in
 -	        atf)
--				logger -t advanced_setup "advanced_setup atf"
--				sync_mt7915e_airtime_module_options >/dev/null
--				if ! mt7915e_airtime_reboot_required; then
--					hw_atf_setup
--				fi
--	            ;;
+-			logger -t advanced_setup "advanced_setup atf"
++	trigger="$1"
++	case "$trigger" in
 +		atf)
 +			log_msg "Reloading HW-ATF settings"
-+			sync_mt7915e_airtime_module_options >/dev/null
-+			if ! mt7915e_airtime_reboot_required; then
-+				hw_atf_setup
-+			fi
-+			;;
-         usb)
+ 			sync_mt7915e_airtime_module_options >/dev/null
+ 			if ! mt7915e_airtime_reboot_required; then
+ 				hw_atf_setup
+ 			fi
+-	            ;;
+-        usb)
 -			logger -t advanced_setup "advanced_setup usb"
-+			log_msg "Reloading USB settings"
-             usb_setup
-             ;;
+-            usb_setup
+-            ;;
 -	        wed)
 -			logger -t advanced_setup "advanced_setup wed"
-+        wed)
++			;;
++		usb)
++			log_msg "Reloading USB settings"
++			usb_setup
++			;;
++		wed)
 +			log_msg "Reloading WED settings"
  			sync_mt7915e_wed_module_options >/dev/null
  			;;
@@ -648,8 +647,9 @@
 +			log_msg "Reloading CAKE_MQ settings"
  			cake_mq_setup "$2"
  			;;
-         *)
+-        *)
 -			logger -t advanced_setup "advanced_setup generic"
++		*)
 +			log_msg "Reloading all settings"
  			if [ ! -f /tmp/smp_affinity_started ]; then
  				delay=$(uci get advanced.@advanced_packet_steering[0].advanced_packet_steering_delay 2>/dev/null || echo "30")
@@ -658,15 +658,14 @@
  				sleep $delay
  				echo 1 > /tmp/smp_affinity_started
  			fi
- 			if [ "$(sync_mt7915e_module_options)" = "1" ]; then
- 				reprobe_mt7915e
- 			else
-+				clean_irqbalance_config
- 				advanced_runtime_setup
- 			fi
+ 			sync_mt7915e_module_options >/dev/null
+ 			advanced_runtime_setup
 -			logger -t advanced_setup "advanced_setup finished"
-             ;;
-     esac
++			clean_irqbalance_config
++			advanced_runtime_setup
+ 			;;
+-    esac
++	esac
 +	log_msg "Finished"
  }
  
@@ -674,32 +673,3 @@
 -    logger -t advanced_setup "No stop actions defined"
 +	clean_irqbalance_config
  }
-
---- a/feeds/packages/utils/irqbalance/files/irqbalance.init
-+++ b/feeds/packages/utils/irqbalance/files/irqbalance.init
-@@ -38,6 +38,14 @@
- 		procd_append_param command "-i $1"
- 	}
- 	config_list_foreach irqbalance banirq handle_banirq_value
-+	
-+	if [ -f /tmp/smp_affinity_irqs ]; then
-+		while read -r smp_affinity_irq; do
-+			if [ -n "$smp_affinity_irq" ]; then
-+				procd_append_param command "-i $smp_affinity_irq"
-+			fi
-+		done < /tmp/smp_affinity_irqs
-+	fi
- 
- 	# debug
- 	if [ "$debug" -gt 0 ]; then
-
---- a/package/network/config/netifd/files/etc/init.d/packet_steering
-+++ b/package/network/config/netifd/files/etc/init.d/packet_steering
-@@ -15,6 +15,7 @@
- 
- reload_service() {
- 	packet_steering="$(uci -q get "network.@globals[0].packet_steering")"
-+	[ "${packet_steering:-0}" -gt 0 ] || return 0
- 	steering_flows="$(uci -q get "network.@globals[0].steering_flows")"
- 	[ "${steering_flows:-0}" -gt 0 ] && opts="-l $steering_flows"
- 	if [ -e "/usr/libexec/platform/packet-steering.sh" ]; then
