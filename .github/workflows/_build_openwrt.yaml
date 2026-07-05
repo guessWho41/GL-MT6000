@@ -6,6 +6,10 @@ on:
       check_runner:
         required: true
         type: string
+      remote_branch:
+        required: false
+        type: string
+        default: ""
       build_runner:
         required: true
         type: string
@@ -48,16 +52,18 @@ jobs:
         run: |
           git clone --bare --filter=blob:none https://github.com/${{ env.REMOTE_REPOSITORY }}.git repo
           cd repo
-          remote_branch=$(git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/next-* | head -n1)
+          remote_branch="${{ inputs.remote_branch }}"
           if [ -z "$remote_branch" ]; then
-            echo "*** Could not determine remote_branch ***"
-            exit 1
+            remote_branch=$(git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/next-* | head -n1)
+            if [ -z "$remote_branch" ]; then
+              echo "*** Could not determine remote_branch (no next-* branches found) ***"
+              exit 1
+            fi
           fi
-          latest_commit_sha=$(git rev-parse "${remote_branch}")
-          if [ -z "$latest_commit_sha" ]; then
-            echo "*** Could not get latest_commit_sha from remote_branch=$remote_branch ***"
+          latest_commit_sha=$(git rev-parse --verify --quiet "refs/heads/$remote_branch") || {
+            echo "*** Branch '$remote_branch' not found in ${{ env.REMOTE_REPOSITORY }} ***"
             exit 1
-          fi
+          }
           latest_body=$(gh api "repos/$TARGET_REPOSITORY/releases/latest" --jq .body 2>/dev/null || true)
           if echo "$latest_body" | grep -q "${latest_commit_sha}"; then
             echo "new_commits=false" >> "$GITHUB_OUTPUT"
