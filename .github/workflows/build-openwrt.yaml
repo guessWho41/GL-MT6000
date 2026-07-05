@@ -6,16 +6,23 @@ permissions:
 
 on:
   workflow_dispatch:
+    inputs:
+      testing_kernel:
+        description: "Build with the testing kernel"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build:
     name: Build OpenWrt for GL-MT6000
     uses: ./.github/workflows/_build_openwrt.yaml
     with:
-      config_file: mt6000.config
       check_runner: ubuntu-slim
       build_runner: ubuntu-latest
       use_ccache: true
+      config_file: mt6000.config
+      testing_kernel: ${{ inputs.testing_kernel }}
     permissions:
       contents: write
       actions: write
