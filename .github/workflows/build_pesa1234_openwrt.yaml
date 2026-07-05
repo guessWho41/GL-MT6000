@@ -1,5 +1,9 @@
 name: "Build pesa1234's OpenWrt fork for GL-MT6000"
 
+permissions:
+  contents: write
+  actions: write
+
 on:
   workflow_dispatch:
     inputs:
