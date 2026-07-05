@@ -120,7 +120,7 @@ jobs:
 
       - name: Cache ccache (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.use_ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ccache
           key: ccache-${{ env.REMOTE_REPOSITORY }}-${{ github.run_id }}
