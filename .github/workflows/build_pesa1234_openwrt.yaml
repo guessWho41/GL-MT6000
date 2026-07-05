@@ -1,4 +1,4 @@
-name: "Build pesa1234's OpenWrt for GL-MT6000"
+name: "Build pesa1234's OpenWrt fork for GL-MT6000"
 
 on:
   workflow_dispatch:
@@ -21,11 +21,6 @@ on:
         required: false
         default: true
         type: boolean
-      config_file:
-        description: "Config file"
-        required: false
-        default: mt6000.config
-        type: string
       testing_kernel:
         description: "Build with testing kernel"
         required: false
@@ -43,8 +38,8 @@ on:
         type: string
 
 env:
-  REMOTE_REPOSITORY: pesa1234/openwrt
   GH_TOKEN: ${{ github.token }}
+  REMOTE_REPOSITORY: pesa1234/openwrt
   TARGET_REPOSITORY: "${{ github.repository }}"
   CONFIG_FILE: mt6000.config
 
@@ -57,7 +52,7 @@ jobs:
       new_commits: ${{ steps.check_commits.outputs.new_commits }}
       latest_commit_sha: ${{ steps.check_commits.outputs.latest_commit_sha }}
     steps:
-      - name: Check for new commits in pesa1234 repo
+      - name: Check for new commits in remote repo
         id: check_commits
         run: |
           git clone --bare --filter=blob:none https://github.com/${{ env.REMOTE_REPOSITORY }}.git repo
@@ -291,7 +286,7 @@ jobs:
           else
             echo "$package_list" >> ./release_notes.md
           fi
-          gh release create "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" --latest --title "pesa1234's OpenWrt Custom Release for Flint 2 ($RELEASE_TAG)" --notes-file ./release_notes.md ./release/*
+          gh release create "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" --latest --title "pesa1234's OpenWrt fork release for GL.iNet Flint 2 (GL-MT6000) ($RELEASE_TAG)" --notes-file ./release_notes.md ./release/*
 
       - name: Clean up old builds
         run: |
@@ -324,7 +319,6 @@ jobs:
       - name: Evict old ccache entries
         if: runner.environment == 'github-hosted'
         env:
-          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           KEY_PREFIX: ccache-${{ env.REMOTE_REPOSITORY }}-
           KEEP: "${{ inputs.keep_caches }}"
