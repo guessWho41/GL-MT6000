@@ -113,16 +113,23 @@ jobs:
             firefox \
             google-chrome-stable \
             microsoft-edge-stable \
-            chromium-browser
+            chromium-browser #\
             #azure-cli mono-devel libgl1-mesa-dri \
             #'*mysql*' '*postgresql*' '*mongodb*' \
             #'google-cloud-cli' 'kubectl' 'helm' \
             #'ansible' 'snapd'
 
+          sudo apt-get search \
+          azure-cli mono-devel libgl1-mesa-dri \
+          '*mysql*' '*postgresql*' '*mongodb*' \
+          'google-cloud-cli' 'kubectl' 'helm' \
+          'ansible' 'snapd'
+
           sudo apt-get autoremove --purge -y
           sudo apt-get clean -y
           echo "=== Disk space stats ==="
           df -h
+          echo "=== Disk space stats ==="
 
       - name: Configure Git identity
         run: |
@@ -194,6 +201,7 @@ jobs:
               echo "CONFIG_CCACHE_DIR=\"$HOME/.cache/ccache\"" >> .config
               echo "=== ccache config ==="
               ccache -p
+              echo "=== ccache config ==="
             else
               echo "WARNING: ccache is enabled but ccache binary was not found on the runner. Building without ccache"
             fi
@@ -227,6 +235,7 @@ jobs:
           if [ "${{ inputs.use_ccache }}" = "true" ] && command -v ccache >/dev/null 2>&1; then
             echo "=== ccache stats ==="
             ccache -s
+            echo "=== ccache stats ==="
           fi
           mkdir -p ./release
           find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} ./release/ \;
@@ -296,8 +305,10 @@ jobs:
           releases=$(gh api "repos/$TARGET_REPOSITORY/releases" --paginate --jq 'sort_by(.created_at) | reverse')
           echo "=== Releases that will be kept (newest ${{ env.KEEP_RELEASES }}) ==="
           echo "$releases" | jq -r ".[:${{ env.KEEP_RELEASES }}] | .[] | \"\(.created_at)  id=\(.id)  tag=\(.tag_name)\""
+          echo "=== Releases that will be kept (newest ${{ env.KEEP_RELEASES }}) ==="
           echo "=== Releases that will be deleted ==="
           echo "$releases" | jq -r ".[${{ env.KEEP_RELEASES }}:] | .[] | \"\(.created_at)  id=\(.id)  tag=\(.tag_name)\""
+          echo "=== Releases that will be deleted ==="
           cd ./builder_repo
           git fetch origin main
           git reset --hard origin/main
@@ -318,11 +329,9 @@ jobs:
           KEY_PREFIX: ccache-${{ env.REMOTE_REPOSITORY }}-
         run: |
           echo "=== Matching caches (most-recently-used first) ==="
-          gh cache list --limit 100 --json id,key,lastAccessedAt \
-            --jq "map(select(.key | startswith(\"$KEY_PREFIX\"))) | sort_by(.lastAccessedAt) | reverse | .[] | \"\(.lastAccessedAt)  id=\(.id)  key=\(.key)\""
+          gh cache list --limit 100 --json id,key,lastAccessedAt --jq "map(select(.key | startswith(\"$KEY_PREFIX\"))) | sort_by(.lastAccessedAt) | reverse | .[] | \"\(.lastAccessedAt)  id=\(.id)  key=\(.key)\""
           echo "=== Deleting all but the newest ${{ env.KEEP_CACHES }} ==="
-          gh cache list --limit 100 --json id,key,lastAccessedAt \
-            --jq "map(select(.key | startswith(\"$KEY_PREFIX\"))) | sort_by(.lastAccessedAt) | reverse | .[${{ env.KEEP_CACHES }}:] | .[].id" | while read id; do
+          gh cache list --limit 100 --json id,key,lastAccessedAt --jq "map(select(.key | startswith(\"$KEY_PREFIX\"))) | sort_by(.lastAccessedAt) | reverse | .[${{ env.KEEP_CACHES }}:] | .[].id" | while read id; do
               echo "deleting cache id=$id"
               gh cache delete "$id" || true
           done
