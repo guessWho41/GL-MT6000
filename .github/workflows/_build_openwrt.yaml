@@ -178,10 +178,14 @@ jobs:
         run: |
           cp -v "./builder_repo/config/${{ inputs.config_file }}" .config
           if [ "${{ inputs.use_ccache }}" = "true" ]; then
-            echo "CONFIG_CCACHE=y" >> .config
-            echo "CONFIG_CCACHE_DIR=\"$HOME/.cache/ccache\"" >> .config
-            echo "=== Ccache config ==="
-            ccache -p
+            if command -v ccache >/dev/null 2>&1; then
+              echo "CONFIG_CCACHE=y" >> .config
+              echo "CONFIG_CCACHE_DIR=\"$HOME/.cache/ccache\"" >> .config
+              echo "=== ccache config ==="
+              ccache -p
+            else
+              echo "WARNING: ccache is enabled but ccache binary was not found on the runner. Building without ccache"
+            fi
           fi
           rsync -a ./builder_repo/files/ ./
           rsync -a ./builder_repo/patches/ ./patches/
@@ -202,8 +206,8 @@ jobs:
             sleep 30
             make -j1 V=s
           }
-          if [ "${{ inputs.use_ccache }}" = "true" ]; then
-            echo "=== Ccache stats ==="
+          if [ "${{ inputs.use_ccache }}" = "true" ] && command -v ccache >/dev/null 2>&1; then
+            echo "=== ccache stats ==="
             ccache -s
           fi
           mkdir -p ./release
@@ -304,8 +308,7 @@ jobs:
             --jq "map(select(.key | startswith(\"$KEY_PREFIX\"))) | sort_by(.lastAccessedAt) | reverse | .[] | \"\(.lastAccessedAt)  id=\(.id)  key=\(.key)\""
           echo "=== Deleting all but the newest $KEEP ==="
           gh cache list --limit 100 --json id,key,lastAccessedAt \
-            --jq "map(select(.key | startswith(\"$KEY_PREFIX\"))) | sort_by(.lastAccessedAt) | reverse | .[$KEEP:] | .[].id" \
-          | while read id; do
+            --jq "map(select(.key | startswith(\"$KEY_PREFIX\"))) | sort_by(.lastAccessedAt) | reverse | .[$KEEP:] | .[].id" | while read id; do
               echo "deleting cache id=$id"
               gh cache delete "$id" || true
-            done
+          done
