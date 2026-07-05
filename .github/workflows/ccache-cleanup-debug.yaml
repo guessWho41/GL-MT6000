@@ -1,0 +1,112 @@
+name: Cache eviction (dry-run debug)
+ 
+permissions:
+  contents: read
+  actions: write
+ 
+on:
+  workflow_dispatch:
+    inputs:
+      key_prefix:
+        description: "Cache key prefix to match (leave as default for the build's ccache key)"
+        required: false
+        default: "ccache-pesa1234/openwrt-"
+        type: string
+      keep:
+        description: "Number of newest matching caches to keep"
+        required: false
+        default: "1"
+        type: string
+      limit:
+        description: "Max caches to fetch from gh cache list (documented max is 100)"
+        required: false
+        default: "100"
+        type: string
+ 
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPO: ${{ github.repository }}
+ 
+jobs:
+  dry-run:
+    name: Dry-run cache eviction
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirmed-safe listing (id only)
+        run: |
+          echo "gh version:"
+          gh --version
+          echo
+          echo "===== gh cache list --json id (only 'id' is confirmed by GitHub docs) ====="
+          gh cache list --limit "${{ inputs.limit }}" --json id --jq '.[] | .id' || {
+            echo "!!! Even the 'id' field failed. Something is wrong with auth, permissions, or the command itself."
+            exit 1
+          }
+ 
+      - name: Probe field names (UNVERIFIED — expected to reveal valid fields if any are wrong)
+        continue-on-error: true
+        run: |
+          echo "===== Attempting fields: id,key,createdAt,lastAccessedAt,sizeInBytes,ref ====="
+          echo "If any field name is invalid, gh will error below AND list the valid field names."
+          echo "Use that output to correct the eviction workflow before trusting it."
+          echo
+          gh cache list --limit "${{ inputs.limit }}" \
+            --json id,key,createdAt,lastAccessedAt,sizeInBytes,ref \
+            --jq '.[] | "\(.createdAt)  lastUsed=\(.lastAccessedAt)  size=\(.sizeInBytes)  id=\(.id)  ref=\(.ref)  key=\(.key)"'
+ 
+      - name: Count total caches
+        run: |
+          total=$(gh cache list --limit "${{ inputs.limit }}" --json id --jq '. | length')
+          echo "Total caches fetched (capped at limit=${{ inputs.limit }}): $total"
+          if [ "$total" -ge "${{ inputs.limit }}" ]; then
+            echo "WARNING: fetched count equals the limit. There may be MORE caches than shown,"
+            echo "which means a real eviction using this list could miss the oldest entries."
+          fi
+ 
+      - name: Dry-run — show matching caches, kept vs deleted (sorted by createdAt)
+        continue-on-error: true
+        env:
+          KEY_PREFIX: ${{ inputs.key_prefix }}
+          KEEP: ${{ inputs.keep }}
+        run: |
+          echo "Filtering to keys starting with: '$KEY_PREFIX'"
+          echo "Keeping newest: $KEEP"
+          echo
+          echo "NOTE: this step sorts by 'createdAt', a field name I have NOT verified."
+          echo "If the previous probe step showed 'createdAt' is invalid, this step will error."
+          echo
+ 
+          matching=$(gh cache list --limit "${{ inputs.limit }}" --json id,key,createdAt \
+            --jq "map(select(.key | startswith(\"$KEY_PREFIX\"))) | sort_by(.createdAt) | reverse")
+ 
+          echo "===== Matching caches (newest first) ====="
+          echo "$matching" | jq -r '.[] | "\(.createdAt)  id=\(.id)  key=\(.key)"'
+          echo
+          echo "===== WOULD KEEP (newest $KEEP) ====="
+          echo "$matching" | jq -r ".[:$KEEP] | .[] | \"\(.createdAt)  id=\(.id)  key=\(.key)\""
+          echo
+          echo "===== WOULD DELETE ====="
+          echo "$matching" | jq -r ".[$KEEP:] | .[] | \"\(.createdAt)  id=\(.id)  key=\(.key)\""
+          echo
+          echo "(dry-run — no gh cache delete calls were made)"
+ 
+      - name: Alternative sort by lastAccessedAt (in case createdAt is invalid or you prefer last-used)
+        continue-on-error: true
+        env:
+          KEY_PREFIX: ${{ inputs.key_prefix }}
+          KEEP: ${{ inputs.keep }}
+        run: |
+          echo "Same as above but sorted by 'lastAccessedAt' — the field GitHub's own eviction uses."
+          echo "This is provided so you can compare and pick whichever field is valid and correct."
+          echo
+          matching=$(gh cache list --limit "${{ inputs.limit }}" --json id,key,lastAccessedAt \
+            --jq "map(select(.key | startswith(\"$KEY_PREFIX\"))) | sort_by(.lastAccessedAt) | reverse")
+ 
+          echo "===== Matching caches (most-recently-used first) ====="
+          echo "$matching" | jq -r '.[] | "\(.lastAccessedAt)  id=\(.id)  key=\(.key)"'
+          echo
+          echo "===== WOULD DELETE (all but newest $KEEP by last use) ====="
+          echo "$matching" | jq -r ".[$KEEP:] | .[] | \"\(.lastAccessedAt)  id=\(.id)  key=\(.key)\""
+          echo
+          echo "(dry-run — no gh cache delete calls were made)"
+ 
