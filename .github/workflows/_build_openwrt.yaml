@@ -1,34 +1,43 @@
-name: _Build OpenWrt for GL-MT6000 (reusable)
+name: Build pesa1234 OpenWrt for GL-MT6000
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
-      check_runner:
-        required: true
-        type: string
-      remote_branch:
+      runner_type:
+        description: "Runner to build on"
         required: false
-        type: string
+        default: github-hosted
+        type: choice
+        options:
+          - github-hosted
+          - self-hosted
+      remote_branch:
+        description: "Remote branch to build (leave empty for the latest next-* branch)"
+        required: false
         default: ""
-      build_runner:
-        required: true
         type: string
       use_ccache:
+        description: "Use ccache"
         required: false
+        default: true
         type: boolean
-        default: false
       config_file:
-        required: true
+        description: "Config file in ./config to build"
+        required: false
+        default: mt6000.config
         type: string
       testing_kernel:
+        description: "Build with the testing kernel"
         required: false
-        type: boolean
         default: false
+        type: boolean
       keep_releases:
+        description: "Number of newest releases to keep"
         required: false
         default: "3"
         type: string
       keep_caches:
+        description: "Number of newest ccache entries to keep"
         required: false
         default: "1"
         type: string
@@ -41,7 +50,7 @@ env:
 jobs:
   check_commits:
     name: Check for new commits
-    runs-on: ${{ inputs.check_runner }}
+    runs-on: ${{ inputs.runner_type == 'self-hosted' && 'self-hosted' || 'ubuntu-slim' }}
     outputs:
       remote_branch: ${{ steps.check_commits.outputs.remote_branch }}
       new_commits: ${{ steps.check_commits.outputs.new_commits }}
@@ -79,7 +88,7 @@ jobs:
     name: Build OpenWrt
     needs: check_commits
     if: github.event_name == 'workflow_dispatch' || needs.check_commits.outputs.new_commits == 'true'
-    runs-on: ${{ inputs.build_runner }}
+    runs-on: ${{ inputs.runner_type == 'self-hosted' && 'self-hosted' || 'ubuntu-latest' }}
     steps:
       - name: Install dependencies and free disk space
         if: runner.environment == 'github-hosted'
