@@ -1,4 +1,4 @@
-name: Build pesa1234 OpenWrt for GL-MT6000
+name: "Build pesa1234's OpenWrt for GL-MT6000"
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ on:
           - github-hosted
           - self-hosted
       remote_branch:
-        description: "Remote branch to build (leave empty for the latest next-* branch)"
+        description: "Remote branch to build (leave empty for the latest branch)"
         required: false
         default: ""
         type: string
@@ -22,12 +22,12 @@ on:
         default: true
         type: boolean
       config_file:
-        description: "Config file in ./config to build"
+        description: "Config file"
         required: false
         default: mt6000.config
         type: string
       testing_kernel:
-        description: "Build with the testing kernel"
+        description: "Build with testing kernel"
         required: false
         default: false
         type: boolean
@@ -46,6 +46,7 @@ env:
   REMOTE_REPOSITORY: pesa1234/openwrt
   GH_TOKEN: ${{ github.token }}
   TARGET_REPOSITORY: "${{ github.repository }}"
+  CONFIG_FILE: mt6000.config
 
 jobs:
   check_commits:
@@ -195,7 +196,7 @@ jobs:
 
       - name: Setup configuration and custom files
         run: |
-          cp -v "./builder_repo/config/${{ inputs.config_file }}" .config
+          cp -v "./builder_repo/config/${{ env.CONFIG_FILE }}" .config
           if [ "${{ inputs.use_ccache }}" = "true" ]; then
             if command -v ccache >/dev/null 2>&1; then
               echo "CONFIG_CCACHE=y" >> .config
@@ -273,7 +274,6 @@ jobs:
           REMOTE_REPOSITORY="${{ env.REMOTE_REPOSITORY }}"
           REMOTE_BRANCH="${{ needs.check_commits.outputs.remote_branch }}"
           LATEST_COMMIT="${{ needs.check_commits.outputs.latest_commit_sha }}"
-          CONFIG_FILE="${{ inputs.config_file }}"
           cat > ./release_notes.md <<EOF
           ### 🔄 Main Repository
           - **Repository:** [${REMOTE_REPOSITORY}](https://github.com/${REMOTE_REPOSITORY})
@@ -282,7 +282,7 @@ jobs:
 
           ### 📝 Build Information
           - **Target:** [GL.iNet Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
-          - **Configuration:** ${CONFIG_FILE}
+          - **Configuration:** ${{ env.CONFIG_FILE }}
           EOF
           package_list=$(sed -n '/<!-- package-list-start -->/,/<!-- package-list-end -->/{ /<!--/d; p }' ./builder_repo/README.md)
           if [ -z "$package_list" ]; then
@@ -291,7 +291,7 @@ jobs:
           else
             echo "$package_list" >> ./release_notes.md
           fi
-          gh release create "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" --latest --title "OpenWrt Custom Release for Flint 2 ($RELEASE_TAG)" --notes-file ./release_notes.md ./release/*
+          gh release create "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" --latest --title "pesa1234's OpenWrt Custom Release for Flint 2 ($RELEASE_TAG)" --notes-file ./release_notes.md ./release/*
 
       - name: Clean up old builds
         run: |
