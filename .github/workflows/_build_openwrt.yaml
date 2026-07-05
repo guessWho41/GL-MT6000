@@ -16,9 +16,13 @@ on:
         required: false
         type: boolean
         default: false
-      keep:
+      keep_releases:
         required: false
         default: "3"
+        type: string
+      keep_caches:
+        required: false
+        default: "1"
         type: string
 
 env:
@@ -261,7 +265,7 @@ jobs:
 
       - name: Clean up old builds
         run: |
-          KEEP="${{ inputs.keep }}"
+          KEEP="${{ inputs.keep_releases }}"
           for i in $(seq 1 10); do
             if gh api "repos/$TARGET_REPOSITORY/releases" --jq '.[].tag_name' | grep -qx "$RELEASE_TAG"; then
               break
@@ -286,3 +290,22 @@ jobs:
               git push origin main
             fi
           done
+
+      - name: Evict old ccache entries
+        if: runner.environment == 'github-hosted'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          KEY_PREFIX: ccache-${{ env.REMOTE_REPOSITORY }}-
+          KEEP: "${{ inputs.keep_caches }}"
+        run: |
+          echo "=== Matching caches (most-recently-used first) ==="
+          gh cache list --limit 100 --json id,key,lastAccessedAt \
+            --jq "map(select(.key | startswith(\"$KEY_PREFIX\"))) | sort_by(.lastAccessedAt) | reverse | .[] | \"\(.lastAccessedAt)  id=\(.id)  key=\(.key)\""
+          echo "=== Deleting all but the newest $KEEP ==="
+          gh cache list --limit 100 --json id,key,lastAccessedAt \
+            --jq "map(select(.key | startswith(\"$KEY_PREFIX\"))) | sort_by(.lastAccessedAt) | reverse | .[$KEEP:] | .[].id" \
+          | while read id; do
+              echo "deleting cache id=$id"
+              gh cache delete "$id" || true
+            done
