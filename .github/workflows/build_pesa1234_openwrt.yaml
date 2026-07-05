@@ -26,22 +26,14 @@ on:
         required: false
         default: false
         type: boolean
-      keep_releases:
-        description: "Number of newest releases to keep"
-        required: false
-        default: "3"
-        type: string
-      keep_caches:
-        description: "Number of newest ccache entries to keep"
-        required: false
-        default: "1"
-        type: string
 
 env:
   GH_TOKEN: ${{ github.token }}
   REMOTE_REPOSITORY: pesa1234/openwrt
   TARGET_REPOSITORY: "${{ github.repository }}"
   CONFIG_FILE: mt6000.config
+  KEEP_RELEASES: 3
+  KEEP_CACHES: 1
 
 jobs:
   check_commits:
@@ -290,7 +282,7 @@ jobs:
 
       - name: Clean up old builds
         run: |
-          KEEP="${{ inputs.keep_releases }}"
+          KEEP=${{ env.KEEP_RELEASES }}
           for i in $(seq 1 10); do
             if gh api "repos/$TARGET_REPOSITORY/releases" --jq '.[].tag_name' | grep -qx "$RELEASE_TAG"; then
               break
@@ -321,7 +313,7 @@ jobs:
         env:
           GH_REPO: ${{ github.repository }}
           KEY_PREFIX: ccache-${{ env.REMOTE_REPOSITORY }}-
-          KEEP: "${{ inputs.keep_caches }}"
+          KEEP: ${{ env.KEEP_CACHES }}
         run: |
           echo "=== Matching caches (most-recently-used first) ==="
           gh cache list --limit 100 --json id,key,lastAccessedAt \
