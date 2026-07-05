@@ -286,7 +286,6 @@ jobs:
 
       - name: Clean up old builds
         run: |
-          KEEP=${{ env.KEEP_RELEASES }}
           for i in $(seq 1 10); do
             if gh api "repos/$TARGET_REPOSITORY/releases" --jq '.[].tag_name' | grep -qx "$RELEASE_TAG"; then
               break
@@ -295,14 +294,14 @@ jobs:
             sleep 3
           done
           releases=$(gh api "repos/$TARGET_REPOSITORY/releases" --paginate --jq 'sort_by(.created_at) | reverse')
-          echo "=== Releases that will be kept (newest $KEEP) ==="
-          echo "$releases" | jq -r ".[:$KEEP] | .[] | \"\(.created_at)  id=\(.id)  tag=\(.tag_name)\""
+          echo "=== Releases that will be kept (newest ${{ env.KEEP_RELEASES }}) ==="
+          echo "$releases" | jq -r ".[:${{ env.KEEP_RELEASES }}] | .[] | \"\(.created_at)  id=\(.id)  tag=\(.tag_name)\""
           echo "=== Releases that will be deleted ==="
-          echo "$releases" | jq -r ".[$KEEP:] | .[] | \"\(.created_at)  id=\(.id)  tag=\(.tag_name)\""
+          echo "$releases" | jq -r ".[${{ env.KEEP_RELEASES }}:] | .[] | \"\(.created_at)  id=\(.id)  tag=\(.tag_name)\""
           cd ./builder_repo
           git fetch origin main
           git reset --hard origin/main
-          echo "$releases" | jq -r ".[$KEEP:] | .[] | \"\(.id) \(.tag_name)\"" | while read id tag; do
+          echo "$releases" | jq -r ".[${{ env.KEEP_RELEASES }}:] | .[] | \"\(.id) \(.tag_name)\"" | while read id tag; do
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id" && gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null || true
             if [ -d "$tag" ]; then
               rm -rfv "$tag"
@@ -315,16 +314,15 @@ jobs:
       - name: Evict old ccache entries
         if: runner.environment == 'github-hosted'
         env:
-          GH_REPO: ${{ github.repository }}
+          GH_REPO: ${{ env.TARGET_REPOSITORY }}
           KEY_PREFIX: ccache-${{ env.REMOTE_REPOSITORY }}-
-          KEEP: ${{ env.KEEP_CACHES }}
         run: |
           echo "=== Matching caches (most-recently-used first) ==="
           gh cache list --limit 100 --json id,key,lastAccessedAt \
             --jq "map(select(.key | startswith(\"$KEY_PREFIX\"))) | sort_by(.lastAccessedAt) | reverse | .[] | \"\(.lastAccessedAt)  id=\(.id)  key=\(.key)\""
-          echo "=== Deleting all but the newest $KEEP ==="
+          echo "=== Deleting all but the newest ${{ env.KEEP_CACHES }} ==="
           gh cache list --limit 100 --json id,key,lastAccessedAt \
-            --jq "map(select(.key | startswith(\"$KEY_PREFIX\"))) | sort_by(.lastAccessedAt) | reverse | .[$KEEP:] | .[].id" | while read id; do
+            --jq "map(select(.key | startswith(\"$KEY_PREFIX\"))) | sort_by(.lastAccessedAt) | reverse | .[${{ env.KEEP_CACHES }}:] | .[].id" | while read id; do
               echo "deleting cache id=$id"
               gh cache delete "$id" || true
           done
