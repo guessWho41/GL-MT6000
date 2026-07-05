@@ -3,9 +3,6 @@ name: _Build OpenWrt for GL-MT6000 (reusable)
 on:
   workflow_call:
     inputs:
-      config_file:
-        required: true
-        type: string
       check_runner:
         required: true
         type: string
@@ -13,6 +10,13 @@ on:
         required: true
         type: string
       use_ccache:
+        required: false
+        type: boolean
+        default: false
+      config_file:
+        required: true
+        type: string
+      testing_kernel:
         required: false
         type: boolean
         default: false
@@ -185,6 +189,13 @@ jobs:
               ccache -p
             else
               echo "WARNING: ccache is enabled but ccache binary was not found on the runner. Building without ccache"
+            fi
+          fi
+          if [ "${{ inputs.testing_kernel }}" = "true" ]; then
+            if grep -q '^# CONFIG_TESTING_KERNEL is not set$' .config; then
+              sed -i 's/^# CONFIG_TESTING_KERNEL is not set$/CONFIG_TESTING_KERNEL=y/' .config
+            elif ! grep -q '^CONFIG_TESTING_KERNEL=' .config; then
+              echo "CONFIG_TESTING_KERNEL=y" >> .config
             fi
           fi
           rsync -a ./builder_repo/files/ ./
