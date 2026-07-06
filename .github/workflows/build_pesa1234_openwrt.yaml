@@ -119,15 +119,15 @@ jobs:
             #'google-cloud-cli' 'kubectl' 'helm' \
             #'ansible' 'snapd'
 
-          echo "=== Installed packages ==="
-          sudo apt list --installed
-          echo "=== Installed packages ==="
-
           sudo apt-get autoremove --purge -y
           sudo apt-get clean -y
           echo "=== Disk space stats ==="
           df -h
           echo "=== Disk space stats ==="
+
+          echo "=== Installed packages ==="
+          sudo apt list --installed
+          echo "=== Installed packages ==="
 
       - name: Configure Git identity
         run: |
