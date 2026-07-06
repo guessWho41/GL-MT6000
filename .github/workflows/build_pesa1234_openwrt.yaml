@@ -127,6 +127,7 @@ jobs:
 
           echo "=== Installed packages ==="
           sudo apt list --installed
+          dpkg-query -W -f='${Installed-Size;8}  ${Package}\n' | sort -n
           echo "=== Installed packages ==="
 
       - name: Configure Git identity
