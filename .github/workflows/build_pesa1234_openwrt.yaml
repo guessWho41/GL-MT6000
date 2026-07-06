@@ -82,7 +82,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || needs.check_commits.outputs.new_commits == 'true'
     runs-on: ${{ inputs.runner_type == 'self-hosted' && 'self-hosted' || 'ubuntu-latest' }}
     steps:
-      - name: Install dependencies and free disk space
+      - name: Install dependencies #and free disk space
         if: runner.environment == 'github-hosted'
         run: |
           #echo "=== Disk space stats before ==="
