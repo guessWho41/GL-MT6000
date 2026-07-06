@@ -85,7 +85,7 @@ jobs:
       - name: Install dependencies and free disk space
         if: runner.environment == 'github-hosted'
         run: |
-          sudo rm -rf \
+          sudo rm -rfv \
             /usr/share/dotnet \
             /usr/local/lib/android \
             /opt/ghc \
@@ -163,7 +163,7 @@ jobs:
       - name: Update feeds
         run: |
           ./scripts/feeds update -a
-          rm -rf ./feeds/packages/net/mwan3 ./feeds/luci/applications/luci-app-mwan3
+          rm -rfv ./feeds/packages/net/mwan3 ./feeds/luci/applications/luci-app-mwan3
 
       - name: Checkout mwan3 nftables repository
         uses: actions/checkout@v6
