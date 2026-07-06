@@ -85,6 +85,9 @@ jobs:
       - name: Install dependencies and free disk space
         if: runner.environment == 'github-hosted'
         run: |
+          echo "=== Disk space stats before ==="
+          df -h
+          echo "=== Disk space stats bedore ==="
           sudo rm -rfv \
             /usr/share/dotnet \
             /usr/local/lib/android \
@@ -118,9 +121,9 @@ jobs:
 
           sudo apt-get autoremove --purge -y
           sudo apt-get clean -y
-          echo "=== Disk space stats ==="
+          echo "=== Disk space stats after ==="
           df -h
-          echo "=== Disk space stats ==="
+          echo "=== Disk space stats after ==="
 
           echo "=== Installed packages ==="
           sudo apt list --installed
