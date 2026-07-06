@@ -119,9 +119,9 @@ jobs:
             #'google-cloud-cli' 'kubectl' 'helm' \
             #'ansible' 'snapd'
 
-          === Installed packages ===
+          echo "=== Installed packages ==="
           sudo apt list --installed
-          === Installed packages ===
+          echo "=== Installed packages ==="
 
           sudo apt-get autoremove --purge -y
           sudo apt-get clean -y
