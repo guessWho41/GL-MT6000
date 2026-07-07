@@ -21,7 +21,7 @@ on:
         default: ""
         type: string
       remote_commit:
-        description: "Remote commit to build (overrides branch selection, leave empty for the latest commit)"
+        description: "Remote commit to build (full SHA, overrides branch selection, leave empty for the latest commit)"
         required: false
         type: string
         default: ""
