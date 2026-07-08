@@ -425,32 +425,24 @@
  			echo "0"
  			return 0
  		fi
-@@ -869,7 +891,7 @@
+@@ -835,6 +857,7 @@
+ 	if [ -e "$MODULE_FILE" ]; then
+ 		old_content=$(cat "$MODULE_FILE" 2>/dev/null)
+ 		new_line="mt7915e"
++		atf_token_added=0
+ 
+ 		set -- $old_content
+ 		for token in "$@"; do
+@@ -851,7 +874,7 @@
  
  		if [ "$old_content" != "$new_line" ]; then
  			printf '%s\n' "$new_line" > "$MODULE_FILE"
--			logger -t advanced_setup "updated $MODULE_FILE to '$new_line'; reboot required for Airtime Fairness mode change"
+-			logger -t advanced_setup "removed legacy expose_airtime_fairness option from $MODULE_FILE"
 +			log_msg "[HW-ATF] $MODULE_FILE updated with '$new_line'. mt7915e module reload is required to change Airtime Fairness mode"
- 			echo "0"
- 			return 0
  		fi
-@@ -877,7 +899,7 @@
- 
- 	if mt7915e_airtime_reboot_required; then
- 		runtime_atf=$(cat /sys/module/mt7915e/parameters/expose_airtime_fairness 2>/dev/null)
--		logger -t advanced_setup "mt7915e runtime Airtime Fairness state '$runtime_atf' differs from UCI '$atf'; reboot required"
-+		log_msg "[HW-ATF] Current Airtime Fairness state is'$runtime_atf' and differs from saved setting, which is set to '$atf'. Reboot is required."
  	fi
  
- 	echo "0"
-@@ -938,13 +960,13 @@
- 	esac
- 
- 	if mt7915e_airtime_reboot_required; then
--		logger -t advanced_setup "applying VOW ATF/WATF runtime setup; reboot still required for Airtime Fairness module visibility"
-+		log_msg "[HW-ATF] Skipping setup. Reboot is required to change Aritime Fairness mode"
- 	fi
- 
+@@ -892,7 +915,7 @@
  	for FILE in /sys/kernel/debug/ieee80211/*/mt76/vow_atf; do
  		[ -e "$FILE" ] || continue
  		found=1
@@ -459,7 +451,7 @@
  		printf '%s\n' "$atf" > "$FILE"
  	done
  
-@@ -1007,11 +1029,10 @@
+@@ -947,11 +970,10 @@
  		if [ $mtkutil_enable == 1 ]; then
  			if [ $hqos_enable == 1 ]; then
  				/sbin/mtkhnat
@@ -472,7 +464,7 @@
  }
  
  cake_mq_setup()
-@@ -1029,48 +1050,58 @@
+@@ -969,48 +991,58 @@
  
  	case "$value" in
  		''|*[!0-9]*)
@@ -543,7 +535,7 @@
  }
  
  service_triggers() {
-@@ -1078,52 +1109,55 @@
+@@ -1018,52 +1050,55 @@
  }
  
  start_service() {
