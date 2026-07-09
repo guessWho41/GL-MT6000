@@ -295,7 +295,7 @@ jobs:
 
           ### 📝 Build Information
           - **Target:** [GL.iNet Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
-          - **Configuration:** [${{ env.CONFIG_FILE }}](https://github.com/$TARGET_REPOSITORY/config/${{ env.CONFIG_FILE }})
+          - **Configuration:** [${{ env.CONFIG_FILE }}](https://github.com/$TARGET_REPOSITORY/blob/main/config/${{ env.CONFIG_FILE }})
           EOF
           package_list=$(sed -n '/<!-- package-list-start -->/,/<!-- package-list-end -->/{ /<!--/d; p }' ./builder_repo/README.md)
           if [ -z "$package_list" ]; then
