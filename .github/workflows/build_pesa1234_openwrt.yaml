@@ -194,11 +194,11 @@ jobs:
           repository: dl12345/luci-app-mwan3
           path: "feeds/luci/applications/luci-app-mwan3"
 
-      #- name: Checkout usteer-ng repository
-      #  uses: actions/checkout@v6
-      #  with:
-      #    repository: NilsRo/usteer-ng
-      #    path: "feeds/packages/net/usteer-ng"
+      - name: Checkout usteer-ng repository
+        uses: actions/checkout@v6
+        with:
+          repository: NilsRo/usteer-ng
+          path: "feeds/packages/net/usteer-ng"
 
       - name: Refresh feed index and install packages
         run: |
