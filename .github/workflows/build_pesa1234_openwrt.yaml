@@ -21,7 +21,7 @@ on:
         default: ""
         type: string
       remote_commit:
-        description: "Remote commit to build (full SHA, overrides branch selection, leave empty for the latest commit)"
+        description: "Remote commit SHA to build (leave empty for the latest commit, requires remote_branch to be set)"
         required: false
         type: string
         default: ""
@@ -50,6 +50,7 @@ jobs:
     runs-on: ${{ inputs.runner_type == 'self-hosted' && 'self-hosted' || 'ubuntu-slim' }}
     outputs:
       remote_branch: ${{ steps.check_commits.outputs.remote_branch }}
+      remote_commit: ${{ steps.check_commits.outputs.remote_commit }}
       new_commits: ${{ steps.check_commits.outputs.new_commits }}
       latest_commit_sha: ${{ steps.check_commits.outputs.latest_commit_sha }}
     steps:
@@ -57,23 +58,25 @@ jobs:
         id: check_commits
         run: |
           remote_commit="${{ inputs.remote_commit }}"
+          remote_branch="${{ inputs.remote_branch }}"
+          if [ -n "$remote_commit" ] && [ -z "$remote_branch" ]; then
+            echo "*** remote_commit requires remote_branch to be specified as well ***"
+            exit 1
+          fi
+          if [ -z "$remote_branch" ]; then
+            remote_branch=$(git ls-remote "https://github.com/${{ env.REMOTE_REPOSITORY }}.git" "refs/heads/next-*" | sed -e 's|\(.*heads/\)||' | sort -V | tail -n1)
+            if [ -z "$remote_branch" ]; then
+              echo "*** Could not determine remote_branch ***"
+              exit 1
+            fi
+          fi
           if [ -n "$remote_commit" ]; then
             latest_commit_sha=$(gh api "repos/${{ env.REMOTE_REPOSITORY }}/commits/${remote_commit}" --jq .sha 2>/dev/null || true)
             if [ -z "$latest_commit_sha" ]; then
               echo "*** Commit '$remote_commit' not found in ${{ env.REMOTE_REPOSITORY }} ***"
               exit 1
             fi
-            remote_branch=""
           else
-            remote_branch="${{ inputs.remote_branch }}"
-            if [ -z "$remote_branch" ]; then
-              remote_branch=$(git ls-remote "https://github.com/${{ env.REMOTE_REPOSITORY }}.git" "refs/heads/next-*" \
-                | sed -e 's|\(.*heads/\)||' | grep -viE 'test|beta' | sort -V | tail -n1)
-              if [ -z "$remote_branch" ]; then
-                echo "*** Could not determine remote_branch ***"
-                exit 1
-              fi
-            fi
             latest_commit_sha=$(gh api "repos/${{ env.REMOTE_REPOSITORY }}/commits/${remote_branch}" --jq .sha 2>/dev/null || true)
             if [ -z "$latest_commit_sha" ]; then
               echo "*** Could not get latest_commit_sha from remote_branch=$remote_branch ***"
@@ -88,6 +91,7 @@ jobs:
           fi
           {
             echo "remote_branch=${remote_branch}"
+            echo "remote_commit=${remote_commit}"
             echo "latest_commit_sha=${latest_commit_sha}"
           } | tee -a "$GITHUB_OUTPUT"
 
@@ -167,8 +171,12 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: ${{ env.REMOTE_REPOSITORY }}
-          ref: ${{ needs.check_commits.outputs.remote_branch || needs.check_commits.outputs.latest_commit_sha }}
+          ref: ${{ needs.check_commits.outputs.remote_branch }}
           fetch-depth: 0
+
+      - name: Reset to selected commit
+        if: needs.check_commits.outputs.remote_commit != ''
+        run: git reset --hard "${{ needs.check_commits.outputs.latest_commit_sha }}"
 
       - name: Checkout current repository
         uses: actions/checkout@v6
@@ -266,9 +274,7 @@ jobs:
             echo "*** version.buildinfo not found ***"
             exit 1
           fi
-          label="${{ needs.check_commits.outputs.remote_branch }}"
-          [ -z "$label" ] && label=$(echo "${{ needs.check_commits.outputs.latest_commit_sha }}" | cut -c1-10)
-          RELEASE_TAG="$(date +%F)_${version}_${label}"
+          RELEASE_TAG="$(date +%F)_${version}_${{ needs.check_commits.outputs.remote_branch }}"
           echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
 
       - name: Commit build artifacts
