@@ -168,7 +168,6 @@ jobs:
           repository: ${{ env.REMOTE_REPOSITORY }}
           ref: ${{ needs.check_commits.outputs.latest_commit_sha }}
           fetch-depth: 0
-          fetch-tags: true
 
       - name: Checkout current repository
         uses: actions/checkout@v6
@@ -266,9 +265,7 @@ jobs:
             echo "*** version.buildinfo not found ***"
             exit 1
           fi
-          label="${{ needs.check_commits.outputs.remote_branch }}"
-          [ -z "$label" ] && label=$(echo "${{ needs.check_commits.outputs.latest_commit_sha }}" | cut -c1-10)
-          RELEASE_TAG="$(date +%F)_${version}_${label}"
+          RELEASE_TAG="$(date +%F)_${version}_${{ needs.check_commits.outputs.remote_branch }}"
           echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
 
       - name: Commit build artifacts
