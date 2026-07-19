@@ -1,0 +1,421 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "serialNumber": "urn:uuid:eb31f8cd-c960-4d84-9530-ed531e6940bb",
+  "version": "1",
+  "metadata": {
+    "timestamp": "2026-07-19T16:13:21Z"
+  },
+  "components": [
+    {
+      "name": "adblock-fast",
+      "version": "1.2.4-r2",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "AGPL-3.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "cgi-io",
+      "version": "2026.06.28~7314451c-r1",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "coreutils",
+      "version": "9.11-r1",
+      "cpe": "cpe:/a:gnu:coreutils",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-3.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "coreutils-sort",
+      "version": "9.11-r1",
+      "cpe": "cpe:/a:gnu:coreutils",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-3.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "curl",
+      "version": "8.21.0-r1",
+      "cpe": "cpe:/a:haxx:libcurl",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ddns-scripts",
+      "version": "2.8.4-r1",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ddns-scripts-services",
+      "version": "2.8.4-r1",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "dnscrypt-proxy2",
+      "version": "2.1.15-r1",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "ISC"
+          }
+        }
+      ]
+    },
+    {
+      "name": "gawk",
+      "version": "5.4.0-r1",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-3.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "grep",
+      "version": "3.12-r1",
+      "cpe": "cpe:/a:gnu:grep",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-3.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "irqbalance",
+      "version": "1.9.5-r1",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "libcap-ng",
+      "version": "0.8.4-r2",
+      "cpe": "cpe:/a:libcap-ng_project:libcap-ng",
+      "type": "library",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0-or-later"
+          }
+        },
+        {
+          "license": {
+            "name": "LGPL-2.1-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "libcurl4",
+      "version": "8.21.0-r1",
+      "cpe": "cpe:/a:haxx:libcurl",
+      "type": "library",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "libnghttp2-14",
+      "version": "1.66.0-r1",
+      "cpe": "cpe:/a:nghttp2:nghttp2",
+      "type": "library",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "miniupnpd-nftables",
+      "version": "2.3.9-r3",
+      "cpe": "cpe:/a:miniupnp_project:miniupnpd",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-3-Clause"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mwan3",
+      "version": "3.6.11-r1",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "nginx-mod-luci",
+      "version": "1.30.3-r1",
+      "cpe": "cpe:/a:f5:nginx_open_source",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-2-Clause"
+          }
+        }
+      ]
+    },
+    {
+      "name": "nginx-mod-ubus",
+      "version": "1.30.3-r1",
+      "cpe": "cpe:/a:f5:nginx_open_source",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-2-Clause"
+          }
+        }
+      ]
+    },
+    {
+      "name": "nginx-ssl",
+      "version": "1.30.3-r1",
+      "cpe": "cpe:/a:f5:nginx_open_source",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-2-Clause"
+          }
+        }
+      ]
+    },
+    {
+      "name": "nginx-ssl-util",
+      "version": "1.7-r2",
+      "type": "application"
+    },
+    {
+      "name": "openssh-keygen",
+      "version": "10.3_p1-r2",
+      "cpe": "cpe:/a:openbsd:openssh",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD"
+          }
+        },
+        {
+          "license": {
+            "name": "ISC"
+          }
+        }
+      ]
+    },
+    {
+      "name": "openssh-moduli",
+      "version": "10.3_p1-r2",
+      "cpe": "cpe:/a:openbsd:openssh",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD"
+          }
+        },
+        {
+          "license": {
+            "name": "ISC"
+          }
+        }
+      ]
+    },
+    {
+      "name": "openssh-server",
+      "version": "10.3_p1-r2",
+      "cpe": "cpe:/a:openbsd:openssh",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD"
+          }
+        },
+        {
+          "license": {
+            "name": "ISC"
+          }
+        }
+      ]
+    },
+    {
+      "name": "openssh-sftp-server",
+      "version": "10.3_p1-r2",
+      "cpe": "cpe:/a:openbsd:openssh",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD"
+          }
+        },
+        {
+          "license": {
+            "name": "ISC"
+          }
+        }
+      ]
+    },
+    {
+      "name": "sed",
+      "version": "4.10-r1",
+      "cpe": "cpe:/a:gnu:sed",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-3.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "sqm-scripts",
+      "version": "1.7.2-r2",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0-only"
+          }
+        }
+      ]
+    },
+    {
+      "name": "usteer-ng",
+      "version": "1.0.0-r2",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0-only"
+          }
+        }
+      ]
+    },
+    {
+      "name": "uwsgi",
+      "version": "2.0.30-r1",
+      "cpe": "cpe:/a:unbit:uwsgi",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "uwsgi-cgi-plugin",
+      "version": "2.0.30-r1",
+      "cpe": "cpe:/a:unbit:uwsgi",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "uwsgi-luci-support",
+      "version": "2.0.30-r1",
+      "cpe": "cpe:/a:unbit:uwsgi",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "uwsgi-syslog-plugin",
+      "version": "2.0.30-r1",
+      "cpe": "cpe:/a:unbit:uwsgi",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0-or-later"
+          }
+        }
+      ]
+    }
+  ]
+}
