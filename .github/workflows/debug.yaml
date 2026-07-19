@@ -1,0 +1,110 @@
+name: "DEBUG version derivation"
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner_type:
+        description: "Runner"
+        required: false
+        default: github-hosted
+        type: choice
+        options:
+          - github-hosted
+          - self-hosted
+      remote_branch:
+        description: "Remote branch (empty for latest)"
+        required: false
+        default: ""
+        type: string
+      remote_commit:
+        description: "Remote commit SHA (overrides branch)"
+        required: false
+        default: ""
+        type: string
+      checkout_mode:
+        description: "Check out by SHA or by branch name"
+        required: false
+        default: sha
+        type: choice
+        options:
+          - sha
+          - branch
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  REMOTE_REPOSITORY: pesa1234/openwrt
+  TARGET_REPOSITORY: "${{ github.repository }}"
+
+jobs:
+  check_commits:
+    name: Check for new commits
+    runs-on: ${{ inputs.runner_type == 'self-hosted' && 'self-hosted' || 'ubuntu-slim' }}
+    outputs:
+      remote_branch: ${{ steps.check_commits.outputs.remote_branch }}
+      latest_commit_sha: ${{ steps.check_commits.outputs.latest_commit_sha }}
+    steps:
+      - name: Check for new commits in remote repo
+        id: check_commits
+        run: |
+          remote_commit="${{ inputs.remote_commit }}"
+          if [ -n "$remote_commit" ]; then
+            latest_commit_sha=$(gh api "repos/${{ env.REMOTE_REPOSITORY }}/commits/${remote_commit}" --jq .sha 2>/dev/null || true)
+            if [ -z "$latest_commit_sha" ]; then
+              echo "*** Commit '$remote_commit' not found in ${{ env.REMOTE_REPOSITORY }} ***"
+              exit 1
+            fi
+            remote_branch=""
+          else
+            remote_branch="${{ inputs.remote_branch }}"
+            if [ -z "$remote_branch" ]; then
+              remote_branch=$(git ls-remote "https://github.com/${{ env.REMOTE_REPOSITORY }}.git" "refs/heads/next-*" \
+                | sed -e 's|\(.*heads/\)||' | grep -viE 'test|beta' | sort -V | tail -n1)
+              if [ -z "$remote_branch" ]; then
+                echo "*** Could not determine remote_branch ***"
+                exit 1
+              fi
+            fi
+            latest_commit_sha=$(gh api "repos/${{ env.REMOTE_REPOSITORY }}/commits/${remote_branch}" --jq .sha 2>/dev/null || true)
+            if [ -z "$latest_commit_sha" ]; then
+              echo "*** Could not get latest_commit_sha from remote_branch=$remote_branch ***"
+              exit 1
+            fi
+          fi
+          {
+            echo "remote_branch=${remote_branch}"
+            echo "latest_commit_sha=${latest_commit_sha}"
+          } | tee -a "$GITHUB_OUTPUT"
+
+  debug:
+    name: Debug version derivation
+    needs: check_commits
+    runs-on: ${{ inputs.runner_type == 'self-hosted' && 'self-hosted' || 'ubuntu-latest' }}
+    steps:
+      - name: Checkout remote repository
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ env.REMOTE_REPOSITORY }}
+          ref: ${{ inputs.checkout_mode == 'branch' && needs.check_commits.outputs.remote_branch || needs.check_commits.outputs.latest_commit_sha }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Git state
+        run: |
+          echo "=== HEAD state ==="
+          git status | head -5
+          git rev-parse HEAD
+          echo "=== branches ==="
+          git branch -a | head -20
+          echo "=== tags present ==="
+          git tag -l | wc -l
+          git tag -l | tail -20
+          echo "=== describe ==="
+          git describe --tags --always || echo "describe failed"
+          git describe --tags --abbrev=0 || echo "abbrev=0 describe failed"
+
+      - name: OpenWrt version scripts
+        run: |
+          echo "=== getver.sh ==="
+          ./scripts/getver.sh || echo "getver.sh failed"
+          echo "=== get_source_date_epoch.sh ==="
+          ./scripts/get_source_date_epoch.sh || true
