@@ -172,6 +172,7 @@ jobs:
           repository: ${{ env.REMOTE_REPOSITORY }}
           ref: ${{ needs.check_commits.outputs.latest_commit_sha }}
           fetch-depth: 0
+          fetch-tags: true
 
       - name: Checkout current repository
         uses: actions/checkout@v6
