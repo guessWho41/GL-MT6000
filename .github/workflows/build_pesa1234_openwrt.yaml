@@ -177,7 +177,7 @@ jobs:
 
       - name: Update feeds
         run: |
-          ./scripts/feeds update -a
+          ./scripts/feeds update -a -f
           rm -rfv ./feeds/packages/net/mwan3 ./feeds/luci/applications/luci-app-mwan3
 
       - name: Checkout mwan3 nftables repository
@@ -200,7 +200,10 @@ jobs:
 
       - name: Register usteer-ng feed
         run: |
-          echo "src-link usteerng $GITHUB_WORKSPACE/usteer-ng/openwrt" >> feeds.conf.default
+          CONF=feeds.conf
+          [ -f "$CONF" ] || CONF=feeds.conf.default
+          sed -i '/^src-link[[:space:]]\+usteerng[[:space:]]/d' "$CONF"
+          echo "src-link usteerng $GITHUB_WORKSPACE/usteer-ng/openwrt" >> "$CONF"
 
       - name: Refresh feed index and install packages
         run: |
