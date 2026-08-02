@@ -192,15 +192,20 @@ jobs:
           repository: dl12345/luci-app-mwan3
           path: "feeds/luci/applications/luci-app-mwan3"
 
-      - name: Checkout usteer-ng repository
+      - name: Checkout usteer-ng
         uses: actions/checkout@v6
         with:
           repository: NilsRo/usteer-ng
-          path: "feeds/packages/net/usteer-ng"
+          path: usteer-ng
+
+      - name: Register usteer-ng feed
+        run: |
+          echo "src-link usteerng $GITHUB_WORKSPACE/usteer-ng/openwrt" >> feeds.conf.default
 
       - name: Refresh feed index and install packages
         run: |
           ./scripts/feeds update -i packages luci
+          ./scripts/feeds update usteerng
           ./scripts/feeds install -a
 
       - name: Setup configuration and custom files
