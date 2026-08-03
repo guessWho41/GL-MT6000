@@ -200,12 +200,12 @@ jobs:
           fetch-depth: 0
           path: usteer-ng
 
-      #- name: Pin usteer-ng source version
-        #run: |
-          #REF=$(git -C usteer-ng describe --tags --abbrev=0)   # or: rev-parse HEAD
-          #sed -i "s|^PKG_SOURCE_VERSION:=.*|PKG_SOURCE_VERSION:=$REF|" \
-            #usteer-ng/openwrt/usteer-ng/Makefile
-          #grep -n '^PKG_SOURCE_VERSION' usteer-ng/openwrt/usteer-ng/Makefile
+      - name: Pin usteer-ng source version
+        run: |
+          REF=$(git -C usteer-ng describe --tags --abbrev=0)
+          sed -i "s|^PKG_SOURCE_VERSION:=.*|PKG_SOURCE_VERSION:=$REF|" \
+            usteer-ng/openwrt/usteer-ng/Makefile
+          grep -n '^PKG_SOURCE_VERSION' usteer-ng/openwrt/usteer-ng/Makefile
 
       - name: Register usteer-ng feed
         run: |
