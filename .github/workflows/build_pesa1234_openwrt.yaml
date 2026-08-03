@@ -198,19 +198,19 @@ jobs:
           repository: NilsRo/usteer-ng
           ref: development
           #fetch-depth: 0
-          path: "feeds/packages/net/usteer-ng"
+          path: "usteer-ng"
 
-      #- name: Register usteer-ng feed
-      #  run: |
-      #    CONF=feeds.conf
-      #    [ -f "$CONF" ] || CONF=feeds.conf.default
-      #    sed -i '/^src-link[[:space:]]\+usteerng[[:space:]]/d' "$CONF"
-      #    echo "src-link usteerng $GITHUB_WORKSPACE/usteer-ng/openwrt" >> "$CONF"
+      - name: Register usteer-ng feed
+        run: |
+          CONF=feeds.conf
+          [ -f "$CONF" ] || CONF=feeds.conf.default
+          sed -i '/^src-link[[:space:]]\+usteerng[[:space:]]/d' "$CONF"
+          echo "src-link usteerng $GITHUB_WORKSPACE/usteer-ng/openwrt" >> "$CONF"
+          ./scripts/feeds update usteerng
 
       - name: Refresh feed index and install packages
         run: |
           ./scripts/feeds update -i packages luci
-          #./scripts/feeds update usteerng
           ./scripts/feeds install -a
 
       - name: Setup configuration and custom files
