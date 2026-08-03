@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "architecture": "aarch64_cortex-a53",
+  "packages": {
+    "usteer-ng": "2026.08.03~f8068c6"
+  }
+}
