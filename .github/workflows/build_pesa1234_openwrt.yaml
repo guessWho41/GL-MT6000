@@ -177,7 +177,6 @@ jobs:
 
       - name: Add usteer-ng feed
         run: |
-          set -euo pipefail
           [ -f feeds.conf ] || cp feeds.conf.default feeds.conf
           grep -q '^src-git-full usteerng ' feeds.conf || \
           echo 'src-git-full usteerng https://github.com/NilsRo/usteer-ng.git;development' >> feeds.conf
