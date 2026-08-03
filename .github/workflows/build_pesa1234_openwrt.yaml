@@ -175,6 +175,13 @@ jobs:
         with:
           path: "builder_repo"
 
+      - name: Add usteer-ng feed
+        run: |
+          set -euo pipefail
+          [ -f feeds.conf ] || cp feeds.conf.default feeds.conf
+          grep -q '^src-git-full usteerng ' feeds.conf || \
+          echo 'src-git-full usteerng https://github.com/NilsRo/usteer-ng.git;development' >> feeds.conf
+
       - name: Update feeds
         run: |
           ./scripts/feeds update -a -f
@@ -191,22 +198,6 @@ jobs:
         with:
           repository: dl12345/luci-app-mwan3
           path: "feeds/luci/applications/luci-app-mwan3"
-
-      - name: Checkout usteer-ng
-        uses: actions/checkout@v6
-        with:
-          repository: NilsRo/usteer-ng
-          ref: development
-          #fetch-depth: 0
-          path: "usteer-ng"
-
-      - name: Register usteer-ng feed
-        run: |
-          CONF=feeds.conf
-          [ -f "$CONF" ] || CONF=feeds.conf.default
-          sed -i '/^src-link[[:space:]]\+usteerng[[:space:]]/d' "$CONF"
-          echo "src-link usteerng $GITHUB_WORKSPACE/usteer-ng/openwrt" >> "$CONF"
-          ./scripts/feeds update usteerng
 
       - name: Refresh feed index and install packages
         run: |
