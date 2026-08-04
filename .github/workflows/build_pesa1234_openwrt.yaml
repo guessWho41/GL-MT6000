@@ -160,7 +160,7 @@ jobs:
           ccache --set-config=sloppiness=include_file_ctime,include_file_mtime,locale,time_macros
 
       - name: Checkout remote repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: ${{ env.REMOTE_REPOSITORY }}
           ref: ${{ needs.check_commits.outputs.remote_branch }}
@@ -171,15 +171,9 @@ jobs:
         run: git reset --hard "${{ needs.check_commits.outputs.latest_commit_sha }}"
 
       - name: Checkout current repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: "builder_repo"
-
-      - name: Add usteer-ng feed
-        run: |
-          [ -f feeds.conf ] || cp feeds.conf.default feeds.conf
-          grep -q '^src-git-full usteerng ' feeds.conf || \
-          echo 'src-git-full usteerng https://github.com/NilsRo/usteer-ng.git;development' >> feeds.conf
 
       - name: Update feeds
         run: |
@@ -187,20 +181,28 @@ jobs:
           rm -rfv ./feeds/packages/net/mwan3 ./feeds/luci/applications/luci-app-mwan3
 
       - name: Checkout mwan3 nftables repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: dl12345/mwan3
           path: "feeds/packages/net/mwan3"
 
       - name: Checkout luci-app-mwan3 nftables repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: dl12345/luci-app-mwan3
           path: "feeds/luci/applications/luci-app-mwan3"
 
+      - name: Checkout usteer-ng
+        uses: actions/checkout@v7
+        with:
+          repository: NilsRo/usteer-ng
+          ref: development
+          path: usteer-ng
+          fetch-depth: 0
+
       - name: Refresh feed index and install packages
         run: |
-          sed -i 's|^PKG_VERSION:=.*|PKG_VERSION:=$(subst -,.,$(shell git -C $(PKG_GIT_REPO_ROOT) show -s --format=%cd --date=short HEAD))~$(PKG_SOURCE_VERSION)|' feeds/usteerng/openwrt/usteer-ng/Makefile
+          ln -sfn usteer-ng/openwrt/usteer-ng feeds/packages/usteer-ng
           ./scripts/feeds update -i packages luci
           ./scripts/feeds install -a
 
