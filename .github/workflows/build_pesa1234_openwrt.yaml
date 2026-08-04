@@ -196,9 +196,9 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: NilsRo/usteer-ng
-          ref: development
+          ref: master
           path: "package/usteer-ng"
-          fetch-depth: 0
+          #fetch-depth: 0
 
       - name: Refresh feed index and install packages
         run: |
