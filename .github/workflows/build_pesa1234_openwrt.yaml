@@ -164,7 +164,7 @@ jobs:
         with:
           repository: ${{ env.REMOTE_REPOSITORY }}
           ref: ${{ needs.check_commits.outputs.remote_branch }}
-          fetch-depth: 0
+          #fetch-depth: 0
 
       - name: Reset to selected commit
         if: needs.check_commits.outputs.remote_commit != ''
@@ -197,18 +197,19 @@ jobs:
         with:
           repository: NilsRo/usteer-ng
           ref: development
-          path: usteer-ng
+          path: "usteer-ng"
           fetch-depth: 0
 
       - name: Refresh feed index and install packages
         run: |
-          ln -sfn usteer-ng/openwrt/usteer-ng feeds/packages/usteer-ng
+          ln -sfv usteer-ng/openwrt/usteer-ng feeds/packages/usteer-ng
           ./scripts/feeds update -i packages luci
           ./scripts/feeds install -a
 
       - name: Setup configuration and custom files
         run: |
-          cp -v "./builder_repo/config/${{ env.CONFIG_FILE }}" .config
+          #cp -v "./builder_repo/config/${{ env.CONFIG_FILE }}" .config
+          ln -sfv "./builder_repo/config/${{ env.CONFIG_FILE }}" .config
           if [ "${{ inputs.use_ccache }}" = "true" ]; then
             if command -v ccache >/dev/null 2>&1; then
               echo "CONFIG_CCACHE=y" >> .config
@@ -227,11 +228,12 @@ jobs:
               echo "CONFIG_TESTING_KERNEL=y" >> .config
             fi
           fi
-          rsync -a ./builder_repo/files/ ./
-          rsync -a ./builder_repo/patches/ ./patches/
+          #rsync -a ./builder_repo/files ./
+          ln -sfv ./builder_repo/files ./files
+          #rsync -a ./builder_repo/patches ./patches
           while IFS= read -r -d '' file; do
             patch -f -p1 -i "${file}"
-          done < <(find ./patches -name "*.patch" -print0 | sort -z)
+          done < <(find ./builder_repo/patches -name "*.patch" -print0 | sort -z)
           make defconfig
 
       - name: Build firmware
@@ -254,7 +256,8 @@ jobs:
           mkdir -p ./release
           find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} ./release/ \;
           mv -v .config release/full.config
-          cd ./release && find -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \;
+          #cd ./release && 
+          find /release -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \;
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
