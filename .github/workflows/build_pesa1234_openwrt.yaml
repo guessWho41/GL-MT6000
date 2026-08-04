@@ -202,6 +202,7 @@ jobs:
 
       - name: Refresh feed index and install packages
         run: |
+          #sed -i 's|^PKG_VERSION:=.*|PKG_VERSION:=$(subst -,.,$(shell git -C $(PKG_GIT_REPO_ROOT) show -s --format=%cd --date=short HEAD))~$(PKG_SOURCE_VERSION)|' package/usteer-ng/openwrt/usteer-ng/Makefile
           #ln -sfnrv usteer-ng/openwrt/usteer-ng feeds/packages/net/usteer-ng
           ./scripts/feeds update -i packages luci
           ./scripts/feeds install -a
