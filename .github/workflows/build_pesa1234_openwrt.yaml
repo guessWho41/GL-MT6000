@@ -197,12 +197,12 @@ jobs:
         with:
           repository: NilsRo/usteer-ng
           ref: development
-          path: "usteer-ng"
+          path: "package/usteer-ng"
           fetch-depth: 0
 
       - name: Refresh feed index and install packages
         run: |
-          ln -sfnrv usteer-ng/openwrt/usteer-ng feeds/packages/net/usteer-ng
+          #ln -sfnrv usteer-ng/openwrt/usteer-ng feeds/packages/net/usteer-ng
           ./scripts/feeds update -i packages luci
           ./scripts/feeds install -a
 
