@@ -173,44 +173,44 @@ jobs:
       - name: Checkout current repository
         uses: actions/checkout@v7
         with:
-          path: "builder_repo"
+          path: builder_repo
 
       - name: Update feeds
         run: |
-          ./scripts/feeds update -a -f
-          rm -rfv ./feeds/packages/net/mwan3 ./feeds/luci/applications/luci-app-mwan3
+          scripts/feeds update -a -f
+          rm -rfv feeds/packages/net/mwan3 feeds/luci/applications/luci-app-mwan3
 
       - name: Checkout mwan3 nftables repository
         uses: actions/checkout@v7
         with:
           repository: dl12345/mwan3
-          path: "feeds/packages/net/mwan3"
+          path: feeds/packages/net/mwan3
 
       - name: Checkout luci-app-mwan3 nftables repository
         uses: actions/checkout@v7
         with:
           repository: dl12345/luci-app-mwan3
-          path: "feeds/luci/applications/luci-app-mwan3"
+          path: feeds/luci/applications/luci-app-mwan3
 
       - name: Checkout usteer-ng
         uses: actions/checkout@v7
         with:
           repository: NilsRo/usteer-ng
-          ref: master
-          path: "package/usteer-ng"
-          #fetch-depth: 0
+          ref: development
+          path: package/usteer-ng
+          fetch-depth: 0
 
       - name: Refresh feed index and install packages
         run: |
-          #sed -i 's|^PKG_VERSION:=.*|PKG_VERSION:=$(subst -,.,$(shell git -C $(PKG_GIT_REPO_ROOT) show -s --format=%cd --date=short HEAD))~$(PKG_SOURCE_VERSION)|' package/usteer-ng/openwrt/usteer-ng/Makefile
+          sed -i 's|^PKG_VERSION:=.*|PKG_VERSION:=$(subst -,.,$(shell git -C $(PKG_GIT_REPO_ROOT) show -s --format=%cd --date=short HEAD))~$(PKG_SOURCE_VERSION)|' package/usteer-ng/openwrt/usteer-ng/Makefile
           #ln -sfnrv usteer-ng/openwrt/usteer-ng feeds/packages/net/usteer-ng
-          ./scripts/feeds update -i packages luci
-          ./scripts/feeds install -a
+          scripts/feeds update -i packages luci
+          scripts/feeds install -a
 
       - name: Setup configuration and custom files
         run: |
-          #cp -v "./builder_repo/config/${{ env.CONFIG_FILE }}" .config
-          ln -sfv "./builder_repo/config/${{ env.CONFIG_FILE }}" .config
+          #cp -v "builder_repo/config/${{ env.CONFIG_FILE }}" .config
+          ln -sfv "builder_repo/config/${{ env.CONFIG_FILE }}" .config
           if [ "${{ inputs.use_ccache }}" = "true" ]; then
             if command -v ccache >/dev/null 2>&1; then
               echo "CONFIG_CCACHE=y" >> .config
@@ -229,12 +229,12 @@ jobs:
               echo "CONFIG_TESTING_KERNEL=y" >> .config
             fi
           fi
-          #rsync -a ./builder_repo/files ./
-          ln -sfv ./builder_repo/files ./files
-          #rsync -a ./builder_repo/patches ./patches
+          #rsync -a builder_repo/files ./
+          ln -sfv builder_repo/files files
+          #rsync -a builder_repo/patches patches
           while IFS= read -r -d '' file; do
             patch -f -p1 -i "${file}"
-          done < <(find ./builder_repo/patches -name "*.patch" -print0 | sort -z)
+          done < <(find builder_repo/patches -name "*.patch" -print0 | sort -z)
           make defconfig
 
       - name: Build firmware
@@ -254,21 +254,21 @@ jobs:
             ccache -s
             echo "=== ccache stats ==="
           fi
-          mkdir -p ./release
-          find ./bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} ./release/ \;
+          mkdir -p release
+          find bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} release/ \;
           mv -v .config release/full.config
-          #cd ./release && 
-          find /release -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \;
+          #cd release && 
+          find release -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \;
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
           name: gl-mt6000-firmware
-          path: ./release/*
+          path: release/*
 
       - name: Get release info
         run: |
-          version=$(find ./bin -type f -iname 'version.buildinfo' -print -quit | xargs -r cat | tr -d '\n')
+          version=$(find bin -type f -iname 'version.buildinfo' -print -quit | xargs -r cat | tr -d '\n')
           if [ -z "$version" ]; then
             echo "*** version.buildinfo not found ***"
             exit 1
@@ -278,8 +278,8 @@ jobs:
 
       - name: Commit build artifacts
         run: |
-          mv -v ./bin/* ./builder_repo/
-          cd ./builder_repo
+          mv -v bin/* builder_repo/
+          cd builder_repo
           git add .
           git diff --cached --quiet || git commit -m "$RELEASE_TAG"
           git push origin main
@@ -292,7 +292,7 @@ jobs:
           REMOTE_REPOSITORY="${{ env.REMOTE_REPOSITORY }}"
           REMOTE_BRANCH="${{ needs.check_commits.outputs.remote_branch }}"
           LATEST_COMMIT="${{ needs.check_commits.outputs.latest_commit_sha }}"
-          cat > ./release_notes.md <<EOF
+          cat > release_notes.md <<EOF
           ### 🔄 Main Repository
           - **Repository:** [${REMOTE_REPOSITORY}](https://github.com/${REMOTE_REPOSITORY})
           - **Branch:** ${REMOTE_BRANCH}
@@ -302,14 +302,14 @@ jobs:
           - **Target:** [GL.iNet Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
           - **Configuration:** [${{ env.CONFIG_FILE }}](https://github.com/$TARGET_REPOSITORY/blob/main/config/${{ env.CONFIG_FILE }})
           EOF
-          package_list=$(sed -n '/<!-- package-list-start -->/,/<!-- package-list-end -->/{ /<!--/d; p }' ./builder_repo/README.md)
+          package_list=$(sed -n '/<!-- package-list-start -->/,/<!-- package-list-end -->/{ /<!--/d; p }' builder_repo/README.md)
           if [ -z "$package_list" ]; then
             echo "WARNING: package list section not found in README.md"
-            echo "- *package list not found in README.md*" >> ./release_notes.md
+            echo "- *package list not found in README.md*" >> release_notes.md
           else
-            echo "$package_list" >> ./release_notes.md
+            echo "$package_list" >> release_notes.md
           fi
-          gh release create "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" --latest --title "Custom build of pesa1234's OpenWrt fork for GL-MT6000 ($RELEASE_TAG)" --notes-file ./release_notes.md ./release/*
+          gh release create "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" --latest --title "Custom build of pesa1234's OpenWrt fork for GL-MT6000 ($RELEASE_TAG)" --notes-file release_notes.md release/*
 
       - name: Clean up old builds
         run: |
@@ -325,7 +325,7 @@ jobs:
           echo "$releases" | jq -r ".[:${{ env.KEEP_RELEASES }}] | .[] | \"\(.created_at)  id=\(.id)  tag=\(.tag_name)\""
           echo "=== Releases that will be deleted ==="
           echo "$releases" | jq -r ".[${{ env.KEEP_RELEASES }}:] | .[] | \"\(.created_at)  id=\(.id)  tag=\(.tag_name)\""
-          cd ./builder_repo
+          cd builder_repo
           git fetch origin main
           git reset --hard origin/main
           echo "$releases" | jq -r ".[${{ env.KEEP_RELEASES }}:] | .[] | \"\(.id) \(.tag_name)\"" | while read id tag; do
