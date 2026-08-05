@@ -164,7 +164,7 @@ jobs:
         with:
           repository: ${{ env.REMOTE_REPOSITORY }}
           ref: ${{ needs.check_commits.outputs.remote_branch }}
-          #fetch-depth: 0
+          fetch-depth: 0
 
       - name: Reset to selected commit
         if: needs.check_commits.outputs.remote_commit != ''
