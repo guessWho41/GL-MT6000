@@ -198,13 +198,20 @@ jobs:
         with:
           repository: NilsRo/usteer-ng
           ref: development
-          path: package/usteer-ng
+          #path: package/usteer-ng
+          path: usteer-ng
           fetch-depth: 0
+
+      - name: Pin usteer-ng version
+        run: |
+          cd usteer-ng
+          SRC_SHA=$(git rev-parse HEAD)
+          SRC_DATE=$(git show -s --format=%cd --date=short HEAD)
+          sed -i -e '/^PKG_VERSION:=/d' -e "s|^PKG_SOURCE_VERSION:=.*|PKG_SOURCE_VERSION:=${SRC_SHA}\nPKG_SOURCE_DATE:=${SRC_DATE}\nPKG_RELEASE:=1|" openwrt/usteer-ng/Makefile
 
       - name: Refresh feed index and install packages
         run: |
-          sed -i -e 's|^PKG_VERSION:=.*|PKG_VERSION:=$(subst -,.,$(shell git -C $(PKG_GIT_REPO_ROOT) show -s --format=%cd --date=short HEAD))|' -e 's|^PKG_SOURCE_VERSION:=.*|PKG_SOURCE_VERSION:=$(shell git -C $(PKG_GIT_REPO_ROOT) rev-parse HEAD)|' package/usteer-ng/openwrt/usteer-ng/Makefile
-          #ln -sfnrv usteer-ng/openwrt/usteer-ng feeds/packages/net/usteer-ng
+          ln -sfnrv usteer-ng/openwrt/usteer-ng feeds/packages/net/usteer-ng
           scripts/feeds update -i packages luci
           scripts/feeds install -a
 
