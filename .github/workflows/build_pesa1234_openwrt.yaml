@@ -112,7 +112,6 @@ jobs:
           #  /usr/local/share/chromedriver-linux64 \
           #  /usr/local/share/edge_driver \
           #  /usr/local/share/gecko_driver
-
           #sudo docker image prune --all --force 2>/dev/null || true
 
           sudo apt-get update -y
@@ -128,13 +127,11 @@ jobs:
           #  microsoft-edge-stable mysql-common \
           #  php-common postgresql-common powershell snapd \
           #  temurin
-            #'ansible' mono-devel libgl1-mesa-dri chromium-browser
-
+          #  'ansible' mono-devel libgl1-mesa-dri chromium-browser
           #sudo apt-get autoremove --purge -y
           #sudo apt-get clean -y
           #echo "=== Disk space stats after ==="
           #df -h
-
           #echo "=== Installed packages ==="
           #dpkg-query -W -f='${Installed-Size;8}  ${Package}\n' | sort -n
 
@@ -218,7 +215,6 @@ jobs:
       - name: Setup configuration and custom files
         run: |
           cp -fv "builder_repo/config/${{ env.CONFIG_FILE }}" .config
-
           set_kconfig() {   # $1 = symbol, $2 = string value (omit for bool =y)
             local sym="$1" val="${2-}"
             sed -i -e "/^${sym}=/d" -e "/^# ${sym} is not set\$/d" .config
@@ -228,7 +224,6 @@ jobs:
               echo "${sym}=y" >> .config
             fi
           }
-
           if [ "${{ inputs.use_ccache }}" = "true" ]; then
             if command -v ccache >/dev/null 2>&1; then
               set_kconfig CONFIG_CCACHE
@@ -240,11 +235,9 @@ jobs:
               echo "WARNING: ccache is enabled but ccache binary was not found on the runner. Building without ccache"
             fi
           fi
-
           if [ "${{ inputs.testing_kernel }}" = "true" ]; then
             set_kconfig CONFIG_TESTING_KERNEL
           fi
-          
           #rsync -a builder_repo/files ./
           ln -sfv builder_repo/files files
           #rsync -a builder_repo/patches patches
