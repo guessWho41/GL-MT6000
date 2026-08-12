@@ -188,6 +188,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: dl12345/luci-app-mwan3
+          ref: openwrt-25.12-beta
           path: feeds/luci/applications/luci-app-mwan3
 
       - name: Checkout usteer-ng
