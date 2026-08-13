@@ -176,6 +176,7 @@ jobs:
       - name: Update feeds
         run: |
           scripts/feeds update -a -f
+          git -C feeds/packages checkout -- . 2>/dev/null || true
           rm -rfv feeds/packages/net/mwan3 feeds/luci/applications/luci-app-mwan3
 
       - name: Checkout mwan3 nftables repository
