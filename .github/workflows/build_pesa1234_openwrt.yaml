@@ -173,6 +173,25 @@ jobs:
         with:
           path: builder_repo
 
+      - name: Cache host tools (GitHub-hosted)
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@v6
+        with:
+          path: |
+            build_dir/host
+            staging_dir/host
+          key: openwrt-tools-${{ env.REMOTE_REPOSITORY }}-${{ needs.check_commits.outputs.remote_branch }}-${{ github.run_id }}
+          restore-keys: openwrt-tools-${{ env.REMOTE_REPOSITORY }}-${{ needs.check_commits.outputs.remote_branch }}-
+
+      - name: Refresh host tools timestamps (GitHub-hosted)
+        if: runner.environment == 'github-hosted'
+        run: |
+          if [ -d staging_dir/host/stamp ]; then
+            ./scripts/ext-tools.sh --refresh
+          else
+            echo "No prebuilt host tools present; they will be compiled"
+          fi
+
       - name: Update feeds
         run: |
           scripts/feeds update -a -f
@@ -350,16 +369,17 @@ jobs:
             fi
           done
 
-      - name: Evict old ccache entries
+      - name: Evict old caches
         if: runner.environment == 'github-hosted'
         env:
           GH_REPO: ${{ env.TARGET_REPOSITORY }}
-          KEY_PREFIX: ccache-${{ env.REMOTE_REPOSITORY }}-
         run: |
-          echo "=== Matching caches (most-recently-used first) ==="
-          gh cache list --limit 100 --json id,key,lastAccessedAt --jq "map(select(.key | startswith(\"$KEY_PREFIX\"))) | sort_by(.lastAccessedAt) | reverse | .[] | \"\(.lastAccessedAt)  id=\(.id)  key=\(.key)\""
-          echo "=== Deleting all but the newest ${{ env.KEEP_CACHES }} ==="
-          gh cache list --limit 100 --json id,key,lastAccessedAt --jq "map(select(.key | startswith(\"$KEY_PREFIX\"))) | sort_by(.lastAccessedAt) | reverse | .[${{ env.KEEP_CACHES }}:] | .[].id" | while read id; do
+          for prefix in "ccache-${{ env.REMOTE_REPOSITORY }}-" "openwrt-tools-${{ env.REMOTE_REPOSITORY }}-"; do
+            echo "=== Matching caches for '$prefix' (most-recently-used first) ==="
+            gh cache list --limit 100 --json id,key,lastAccessedAt --jq "map(select(.key | startswith(\"$prefix\"))) | sort_by(.lastAccessedAt) | reverse | .[] | \"\(.lastAccessedAt)  id=\(.id)  key=\(.key)\""
+            echo "=== Deleting all but the newest ${{ env.KEEP_CACHES }} for '$prefix' ==="
+            gh cache list --limit 100 --json id,key,lastAccessedAt --jq "map(select(.key | startswith(\"$prefix\"))) | sort_by(.lastAccessedAt) | reverse | .[${{ env.KEEP_CACHES }}:] | .[].id" | while read id; do
               echo "deleting cache id=$id"
               gh cache delete "$id" || true
+            done
           done
