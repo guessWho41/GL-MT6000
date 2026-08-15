@@ -180,8 +180,8 @@ jobs:
           path: |
             build_dir/host
             staging_dir/host
-          key: tools-${{ hashFiles('tools/**/Makefile') }}-{{ github.run_id }}
-          restore-keys: openwrt-tools-
+          key: tools-${{ hashFiles('tools/**/Makefile') }}-${{ github.run_id }}
+          restore-keys: tools-${{ hashFiles('tools/**/Makefile') }}-
 
       - name: Refresh host tools timestamps (GitHub-hosted)
         if: runner.environment == 'github-hosted'
@@ -200,7 +200,7 @@ jobs:
             build_dir/toolchain-*
             staging_dir/toolchain-*
           key: toolchain-${{ hashFiles('toolchain/**/Makefile') }}-${{ github.run_id }}
-          restore-keys: openwrt-toolchain-${{ hashFiles('toolchain/**/Makefile') }}-
+          restore-keys: toolchain-${{ hashFiles('toolchain/**/Makefile') }}-
 
       - name: Refresh toolchain timestamps (GitHub-hosted)
         if: runner.environment == 'github-hosted'
