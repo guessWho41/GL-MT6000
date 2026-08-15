@@ -180,7 +180,7 @@ jobs:
           path: |
             build_dir/host
             staging_dir/host
-          key: tools-{{ github.run_id }}
+          key: tools-${{ hashFiles('tools/**/Makefile') }}-{{ github.run_id }}
           restore-keys: openwrt-tools-
 
       - name: Refresh host tools timestamps (GitHub-hosted)
@@ -190,6 +190,26 @@ jobs:
             ./scripts/ext-tools.sh --refresh
           else
             echo "No prebuilt host tools present; they will be compiled"
+          fi
+
+      - name: Cache toolchain (GitHub-hosted)
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@v5
+        with:
+          path: |
+            build_dir/toolchain-*
+            staging_dir/toolchain-*
+          key: toolchain-${{ hashFiles('toolchain/**/Makefile') }}-${{ github.run_id }}
+          restore-keys: openwrt-toolchain-${{ hashFiles('toolchain/**/Makefile') }}-
+
+      - name: Refresh toolchain timestamps (GitHub-hosted)
+        if: runner.environment == 'github-hosted'
+        run: |
+          if compgen -G "staging_dir/toolchain-*" > /dev/null; then
+            now=$(date +%Y%m%d%H%M.%S)
+            find -H build_dir/toolchain-* staging_dir/toolchain-* -type f -empty -print0 2>/dev/null | xargs -0 -r touch -t "$now"
+          else
+            echo "No prebuilt toolchain present; it will be compiled"
           fi
 
       - name: Update feeds
@@ -374,7 +394,7 @@ jobs:
         env:
           GH_REPO: ${{ env.TARGET_REPOSITORY }}
         run: |
-          for prefix in "ccache-" "tools-"; do
+          for prefix in "ccache-" "tools-" "toolchain-"; do
             echo "=== Matching caches for '$prefix' (most-recently-used first) ==="
             gh cache list --limit 100 --json id,key,lastAccessedAt --jq "map(select(.key | startswith(\"$prefix\"))) | sort_by(.lastAccessedAt) | reverse | .[] | \"\(.lastAccessedAt)  id=\(.id)  key=\(.key)\""
             echo "=== Deleting all but the newest ${{ env.KEEP_CACHES }} for '$prefix' ==="
