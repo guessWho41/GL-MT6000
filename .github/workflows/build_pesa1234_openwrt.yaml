@@ -145,8 +145,8 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.cache/ccache
-          key: ccache-${{ env.REMOTE_REPOSITORY }}-${{ github.run_id }}
-          restore-keys: ccache-${{ env.REMOTE_REPOSITORY }}-
+          key: ccache-${{ github.run_id }}
+          restore-keys: ccache-
 
       - name: Set ccache config (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.use_ccache
@@ -180,8 +180,8 @@ jobs:
           path: |
             build_dir/host
             staging_dir/host
-          key: openwrt-tools-${{ env.REMOTE_REPOSITORY }}-${{ needs.check_commits.outputs.remote_branch }}-${{ github.run_id }}
-          restore-keys: openwrt-tools-${{ env.REMOTE_REPOSITORY }}-${{ needs.check_commits.outputs.remote_branch }}-
+          key: tools-{{ github.run_id }}
+          restore-keys: openwrt-tools-
 
       - name: Refresh host tools timestamps (GitHub-hosted)
         if: runner.environment == 'github-hosted'
@@ -374,7 +374,7 @@ jobs:
         env:
           GH_REPO: ${{ env.TARGET_REPOSITORY }}
         run: |
-          for prefix in "ccache-${{ env.REMOTE_REPOSITORY }}-" "openwrt-tools-${{ env.REMOTE_REPOSITORY }}-"; do
+          for prefix in "ccache-" "tools-"; do
             echo "=== Matching caches for '$prefix' (most-recently-used first) ==="
             gh cache list --limit 100 --json id,key,lastAccessedAt --jq "map(select(.key | startswith(\"$prefix\"))) | sort_by(.lastAccessedAt) | reverse | .[] | \"\(.lastAccessedAt)  id=\(.id)  key=\(.key)\""
             echo "=== Deleting all but the newest ${{ env.KEEP_CACHES }} for '$prefix' ==="
