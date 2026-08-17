@@ -19,340 +19,91 @@
 # Further documentation can be found here:
 # https://openwrt.org/docs/guide-user/network/wan/multiwan/mwan3#alertsnotifications
 
-# WireGuard routing and DDNS failover
+# DDNS failover
 
 . /lib/functions.sh
 
-WG_TAG="mwan3-wg"
-DDNS_TAG="mwan3-ddns"
-
-MWAN3_STATUS=""
-IP_RULE_CACHE=""
-NET_DIRTY=0
-DDNS_DIRTY=0
-DDNS_RESTART=""
-_FWMARK=""
-DP_V4=""
-DP_V6=""
-USED_MARKS=""
-_UM_LOADED=""
-
-active_iface() {
-	local fam="$1" policy="$2" filter
-	[ -n "$policy" ] || return 1
-	filter="@.policies.$fam.$policy[@.status=\"online\"].interface"
-	printf '%s' "$MWAN3_STATUS" | jsonfilter -e "$filter" 2>/dev/null | head -n1
+is_online() {
+	[ -n "$1" ] || return 1
+	echo "$MWAN3_STATUS" | jsonfilter -e "@.interfaces.$1.status" | grep -qx online
 }
 
-member_in_policy() {
-	local fam="$1" policy="$2" iface="$3" filter
-	[ -n "$policy" ] && [ -n "$iface" ] || return 1
-	filter="@.policies.$fam.$policy[@.interface=\"$iface\"].interface"
-	[ -n "$(printf '%s' "$MWAN3_STATUS" | jsonfilter -e "$filter" 2>/dev/null)" ]
-}
+resolve_target() {
+	local family rule policy members primary backup
+	family="$1"
+	rule="$2"
 
-_dp_done4=""
-_dp_done6=""
+	policy=$(uci -q get mwan3."$rule".use_policy)
+	[ -n "$policy" ] || return
 
-_norm_policy() {
-	case "$1" in
-		default|unreachable|blackhole) ;;
-		*) printf '%s' "$1" ;;
-	esac
-}
+	members=$(echo "$MWAN3_STATUS" | jsonfilter -e "@.policies.${family}.${policy}[0].interface" -e "@.policies.${family}.${policy}[1].interface" 2>/dev/null)
+	primary=$(echo "$members" | sed -n '1p')
+	backup=$(echo "$members" | sed -n '2p')
 
-_dp_rule_cb() {
-	local sec="$1" enabled use_policy family pol
-	local src_ip dest_ip src_port dest_port proto src_iface ipset ipset_src
-
-	config_get use_policy "$sec" use_policy ""
-	[ -n "$use_policy" ] || return 0
-
-	config_get_bool enabled "$sec" enabled 1
-	[ "$enabled" = 1 ] || return 0
-
-	config_get src_ip    "$sec" src_ip ""
-	config_get src_port  "$sec" src_port ""
-	config_get dest_port "$sec" dest_port ""
-	config_get proto     "$sec" proto ""
-	config_get src_iface "$sec" src_iface ""
-	config_get ipset     "$sec" ipset ""
-	config_get ipset_src "$sec" ipset_src ""
-	config_get dest_ip   "$sec" dest_ip ""
-	config_get family    "$sec" family ""
-
-	[ -n "$src_port" ]  && return 0
-	[ -n "$dest_port" ] && return 0
-	[ -n "$src_iface" ] && return 0
-	[ -n "$ipset" ]     && return 0
-	[ -n "$ipset_src" ] && return 0
-	case "$proto"  in ""|all) : ;; *) return 0 ;; esac
-	case "$src_ip" in ""|0.0.0.0/0|::/0) : ;; *) return 0 ;; esac
-
-	case "$use_policy" in
-		default|unreachable|blackhole) pol="" ;;
-		*) pol="$use_policy" ;;
-	esac
-
-	if [ -z "$_dp_done4" ] && [ "$family" != "ipv6" ]; then
-		case "$dest_ip" in ""|0.0.0.0/0) DP_V4="$pol"; _dp_done4=1 ;; esac
-	fi
-	if [ -z "$_dp_done6" ] && [ "$family" != "ipv4" ]; then
-		case "$dest_ip" in ""|::/0) DP_V6="$pol"; _dp_done6=1 ;; esac
-	fi
-}
-
-resolve_default_policies() {
-	local v4raw v6raw
-	DP_V4=""; DP_V6=""; _dp_done4=""; _dp_done6=""
-
-	v4raw=$(uci -q get mwan3.default_rule_v4.use_policy)
-	v6raw=$(uci -q get mwan3.default_rule_v6.use_policy)
-	[ -n "$v4raw" ] && { DP_V4=$(_norm_policy "$v4raw"); _dp_done4=1; }
-	[ -n "$v6raw" ] && { DP_V6=$(_norm_policy "$v6raw"); _dp_done6=1; }
-
-	[ -n "$_dp_done4" ] && [ -n "$_dp_done6" ] && return 0
-	config_load mwan3
-	config_foreach _dp_rule_cb rule
-}
-
-get_table() {
-	local iface="$1" device
-	device=$(ubus call "network.interface.$iface" status 2>/dev/null \
-		| jsonfilter -e '@.l3_device' 2>/dev/null)
-	[ -n "$device" ] || return 1
-	printf '%s\n' "$IP_RULE_CACHE" | awk -v dev="$device" '
-		{ d = 0; t = ""
-		  for (i = 1; i <= NF; i++) {
-			if ($i == "iif" && $(i + 1) == dev) d = 1
-			if ($i == "lookup") t = $(i + 1)
-		  }
-		  if (d && t != "") { print t; exit } }'
-}
-
-wg_del_rule() {
-	local mark prios pr
-	mark=$(printf '0x%x' "$1" 2>/dev/null) || return 0
-	prios=$(ip rule show | awk -v m="$mark" '
-		/ fwmark / {
-			for (i = 1; i <= NF; i++) if ($i == "fwmark") fm = $(i + 1)
-			split(fm, a, "/")
-			if (a[1] == m) { p = $1; sub(/:/, "", p); print p }
-		}')
-	for pr in $prios; do
-		ip rule del priority "$pr" 2>/dev/null
-	done
-}
-
-wg_set_rule() {
-	local wan="$1" mark="$2" prio="$3" table m
-	table=$(get_table "$wan")
-	[ -n "$table" ] || {
-		logger -t "$WG_TAG" "[$wan] could not resolve routing table, skipping"
-		return 1
+	[ -n "$primary" ] || {
+		logger -t mwan3-ddns "[$family] Policy $policy not found in mwan3 status"
+		return
 	}
-	m=$(printf '0x%x' "$mark" 2>/dev/null)
-	printf '%s\n' "$IP_RULE_CACHE" | awk -v m="$m" -v t="$table" '
-		/ fwmark / { fm = 0; lk = 0
-			for (i = 1; i <= NF; i++) {
-				if ($i == "fwmark") { split($(i + 1), a, "/"); if (a[1] == m) fm = 1 }
-				if ($i == "lookup" && $(i + 1) == t) lk = 1
-			}
-			if (fm && lk) found = 1 }
-		END { exit !found }' && return 0
-	wg_del_rule "$mark"
-	ip rule add fwmark "$mark" lookup "$table" priority "$prio"
-	logger -t "$WG_TAG" "fwmark $mark -> table $table (via $wan) prio $prio"
-}
 
-get_wg_interfaces() {
-	ubus call network.interface dump 2>/dev/null \
-		| jsonfilter -e '@.interface[@.proto="wireguard"].interface'
-}
-
-_um_collect() {
-	local fwmark
-	config_get fwmark "$1" fwmark ""
-	[ -n "$fwmark" ] && USED_MARKS="$USED_MARKS $(printf '0x%x' "$fwmark" 2>/dev/null)"
-}
-_um_load() {
-	USED_MARKS=""
-	config_load network
-	config_foreach _um_collect interface
-}
-
-get_or_assign_fwmark() {
-	local iface="$1" mmx k cand
-	_FWMARK=$(uci -q get "network.$iface.fwmark")
-	[ -n "$_FWMARK" ] && return 0
-
-	[ -n "$_UM_LOADED" ] || { _um_load; _UM_LOADED=1; }
-	mmx=$(uci -q get mwan3.globals.mmx_mask)
-	mmx=${mmx:-0x3F00}
-	k=1
-	while :; do
-		cand=$(printf '0x%x' $(( mmx + k * 0x100 )))
-		case " $USED_MARKS " in *" $cand "*) k=$((k + 1)); continue ;; esac
-		break
-	done
-	_FWMARK="$cand"
-	USED_MARKS="$USED_MARKS $cand"
-	uci set "network.$iface.fwmark=$_FWMARK"
-	NET_DIRTY=1
-	logger -t "$WG_TAG" "[$iface] auto-assigned fwmark $_FWMARK (pending reload)"
-}
-
-update_wg() {
-	local iface="$1" mark="$2" prio="$3" wan="$4"
-	[ -n "$mark" ] || { logger -t "$WG_TAG" "[$iface] no fwmark, skipping"; return; }
-	[ -n "$prio" ] || { logger -t "$WG_TAG" "[$iface] no priority, skipping"; return; }
-	if [ -n "$wan" ]; then
-		wg_set_rule "$wan" "$mark" "$prio"
-	else
-		wg_del_rule "$mark"
-		logger -t "$WG_TAG" "[$iface] no online WAN, removed ip rule for $mark"
+	if is_online "$primary"; then
+		echo "$primary"
+	elif is_online "$backup"; then
+		echo "$backup"
 	fi
 }
-
-_ddns_target=""
-_ddns_family=""
-_ddns_changed=0
 
 _ddns_handle_section() {
-	local section="$1" enabled use_ipv6 ip_source bind_network cur
+	local section enabled use_ipv6 family target current ip_source
+	section="$1"
 
-	config_get_bool enabled "$section" enabled 0
-	[ "$enabled" = 1 ] || return
+	config_get enabled "$section" enabled
+	[ "$enabled" = "1" ] || return
 
-	config_get_bool use_ipv6 "$section" use_ipv6 0
-	if [ "$_ddns_family" = "ipv6" ]; then
-		[ "$use_ipv6" = 1 ] || return
+	config_get use_ipv6 "$section" use_ipv6
+	if [ "$use_ipv6" = "1" ]; then
+		family="ipv6"
+		target="$_TARGET_V6"
 	else
-		[ "$use_ipv6" = 1 ] && return
+		family="ipv4"
+		target="$_TARGET_V4"
 	fi
+	[ -n "$target" ] || return
 
-	config_get ip_source "$section" ip_source network
+	config_get current "$section" interface
+	[ "$current" != "$target" ] || return
 
+	logger -t mwan3-ddns "[$family] Switching '$section' from $current to $target"
+	uci set ddns."$section".interface="$target"
+	config_get ip_source "$section" ip_source
 	case "$ip_source" in
-		network)
-			config_get cur "$section" ip_network
-			[ "$cur" = "$_ddns_target" ] && return
-			uci set "ddns.$section.ip_network=$_ddns_target"
-			DDNS_DIRTY=1
-			logger -t "$DDNS_TAG" "[$_ddns_family] '$section': ip_network ${cur:-unset} -> $_ddns_target"
-			;;
-		interface)
-			config_get cur "$section" ip_interface
-			[ "$cur" = "@$_ddns_target" ] && return
-			uci set "ddns.$section.ip_interface=@$_ddns_target"
-			DDNS_DIRTY=1
-			logger -t "$DDNS_TAG" "[$_ddns_family] '$section': ip_interface ${cur:-unset} -> @$_ddns_target"
-			;;
-		web)
-			config_get bind_network "$section" bind_network
-			if [ -n "$bind_network" ]; then
-				[ "$bind_network" = "$_ddns_target" ] && return
-				uci set "ddns.$section.bind_network=$_ddns_target"
-				DDNS_DIRTY=1
-				logger -t "$DDNS_TAG" "[$_ddns_family] '$section': bind_network $bind_network -> $_ddns_target"
-			else
-				[ "$_ddns_changed" = 1 ] || return
-				logger -t "$DDNS_TAG" "[$_ddns_family] '$section': re-detect via default route"
-			fi
-			;;
-		*)
-			[ "$_ddns_changed" = 1 ] || return
-			logger -t "$DDNS_TAG" "[$_ddns_family] '$section': ip_source '$ip_source' not handled, forcing re-detect"
-			;;
+		network)   uci set ddns."$section".ip_network="$target" ;;
+		web)       uci set ddns."$section".bind_network="$target" ;;
+		interface) uci set ddns."$section".ip_interface="$target" ;;
+		*)         logger -t mwan3-ddns "[$family] Unknown ip_source for '$section', skipping network binding" ;;
 	esac
-
-	case " $DDNS_RESTART " in
-		*" $section "*) ;;
-		*) DDNS_RESTART="$DDNS_RESTART $section" ;;
-	esac
-}
-
-update_ddns() {
-	local statefile prev
-	_ddns_family="$1"
-	_ddns_target="$2"
-	[ -n "$_ddns_target" ] || return
-
-	statefile="/tmp/mwan3-ddns.${_ddns_family}.active"
-	prev=$(cat "$statefile" 2>/dev/null)
-	if [ "$prev" = "$_ddns_target" ]; then
-		_ddns_changed=0
-	else
-		_ddns_changed=1
-		printf '%s\n' "$_ddns_target" > "$statefile"
-	fi
-
-	config_foreach _ddns_handle_section service
+	_DDNS_MODIFIED=1
 }
 
 case "$ACTION" in
-connected|disconnected)
-	MWAN3_STATUS=$(ubus call mwan3 status 2>/dev/null)
-	[ -n "$MWAN3_STATUS" ] || {
-		logger -t "$WG_TAG" "mwan3 status unavailable, aborting"
-		exit 0
-	}
+	connected|disconnected)
 
-	resolve_default_policies
+		[ -f /etc/config/ddns ] || exit 0
+		/etc/init.d/ddns enabled 2>/dev/null || exit 0
 
-	if [ -n "$INTERFACE" ] \
-		&& ! member_in_policy ipv4 "$DP_V4" "$INTERFACE" \
-		&& ! member_in_policy ipv6 "$DP_V6" "$INTERFACE"; then
-		exit 0
-	fi
+		MWAN3_STATUS=$(ubus call mwan3 status 2>/dev/null)
 
-	ACTIVE_V4=""
-	[ -n "$DP_V4" ] && ACTIVE_V4=$(active_iface ipv4 "$DP_V4")
-	ACTIVE_V6=""
-	[ -n "$DP_V6" ] && ACTIVE_V6=$(active_iface ipv6 "$DP_V6")
+		_TARGET_V4=$(resolve_target ipv4 default_rule_v4)
+		_TARGET_V6=$(resolve_target ipv6 default_rule_v6)
+		[ -n "$_TARGET_V4$_TARGET_V6" ] || exit 0
 
-	if [ -f /etc/config/ddns ] && /etc/init.d/ddns enabled 2>/dev/null; then
+		_DDNS_MODIFIED=""
 		config_load ddns
-		DDNS_DIRTY=0
-		DDNS_RESTART=""
-		update_ddns ipv4 "$ACTIVE_V4"
-		update_ddns ipv6 "$ACTIVE_V6"
-		[ "$DDNS_DIRTY" = 1 ] && uci commit ddns
-		for _ddns_s in $DDNS_RESTART; do
-			/etc/init.d/ddns restart "$_ddns_s"
-		done
-	fi
+		config_foreach _ddns_handle_section service
 
-	WG_IFACES=$(get_wg_interfaces)
-	if [ -n "$WG_IFACES" ]; then
-		IP_RULE_CACHE=$(ip rule show)
+		[ -n "$_DDNS_MODIFIED" ] || exit 0
+		logger -t mwan3-ddns "Applying DDNS changes"
+		uci commit ddns
+		/etc/init.d/ddns restart
 
-		WG_PRIO_BASE=$(printf '%s\n' "$IP_RULE_CACHE" | awk '
-			/ iif / { p = $1; sub(/:/, "", p); n = p + 0;
-				if (min == "" || n < min) min = n }
-			END { if (min != "") print min - 1 }')
-		[ -n "$WG_PRIO_BASE" ] || WG_PRIO_BASE=1000
-
-		NET_DIRTY=0
-		IDX=0
-		for WG_IFACE in $WG_IFACES; do
-			get_or_assign_fwmark "$WG_IFACE"
-			[ -n "$_FWMARK" ] || {
-				logger -t "$WG_TAG" "[$WG_IFACE] no fwmark resolved, skipping"
-				IDX=$((IDX + 1))
-				continue
-			}
-			WG_PRIO=$((WG_PRIO_BASE - IDX))
-			[ "$WG_PRIO" -lt 1 ] && WG_PRIO=1
-			update_wg "$WG_IFACE" "$_FWMARK" "$WG_PRIO" "$ACTIVE_V4"
-			IDX=$((IDX + 1))
-		done
-
-		[ "$NET_DIRTY" = 1 ] && {
-			uci commit network
-			/etc/init.d/network reload
-			logger -t "$WG_TAG" "committed new fwmark(s), reloaded network"
-		}
-	fi
-	;;
+		;;
 esac
