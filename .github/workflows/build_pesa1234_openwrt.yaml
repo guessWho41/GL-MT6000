@@ -30,6 +30,11 @@ on:
         required: false
         default: true
         type: boolean
+      reuse_build_artifacts:
+        description: "Reuse cached tools and toolchain"
+        required: false
+        default: true
+        type: boolean
       testing_kernel:
         description: "Build with testing kernel"
         required: false
@@ -168,14 +173,18 @@ jobs:
         if: needs.check_commits.outputs.remote_commit != ''
         run: git reset --hard "${{ needs.check_commits.outputs.latest_commit_sha }}"
 
+      - name: Discard preserved build artifacts (self-hosted)
+        if: runner.environment == 'self-hosted' && !inputs.reuse_build_artifacts
+        run: rm -rf build_dir staging_dir
+
       - name: Checkout current repository
         uses: actions/checkout@v7
         with:
           path: builder_repo
 
       - name: Cache host tools (GitHub-hosted)
-        if: runner.environment == 'github-hosted'
-        uses: actions/cache@v6
+        if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
+        uses: actions/cache@v5
         with:
           path: |
             build_dir/host
@@ -183,17 +192,8 @@ jobs:
           key: tools-${{ hashFiles('tools/**/Makefile') }}-${{ github.run_id }}
           restore-keys: tools-${{ hashFiles('tools/**/Makefile') }}-
 
-      - name: Refresh host tools timestamps (GitHub-hosted)
-        if: runner.environment == 'github-hosted'
-        run: |
-          if [ -d staging_dir/host/stamp ]; then
-            ./scripts/ext-tools.sh --refresh
-          else
-            echo "No prebuilt host tools present; they will be compiled"
-          fi
-
       - name: Cache toolchain (GitHub-hosted)
-        if: runner.environment == 'github-hosted'
+        if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
         uses: actions/cache@v5
         with:
           path: |
@@ -202,8 +202,17 @@ jobs:
           key: toolchain-${{ hashFiles('toolchain/**/Makefile') }}-${{ github.run_id }}
           restore-keys: toolchain-${{ hashFiles('toolchain/**/Makefile') }}-
 
+      - name: Refresh host tools timestamps (GitHub-hosted)
+        if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
+        run: |
+          if [ -d staging_dir/host/stamp ]; then
+            ./scripts/ext-tools.sh --refresh
+          else
+            echo "No prebuilt host tools present; they will be compiled"
+          fi
+
       - name: Refresh toolchain timestamps (GitHub-hosted)
-        if: runner.environment == 'github-hosted'
+        if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
         run: |
           if compgen -G "staging_dir/toolchain-*" > /dev/null; then
             now=$(date +%Y%m%d%H%M.%S)
