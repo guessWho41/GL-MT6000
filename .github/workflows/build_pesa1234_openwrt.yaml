@@ -167,15 +167,11 @@ jobs:
           repository: ${{ env.REMOTE_REPOSITORY }}
           ref: ${{ needs.check_commits.outputs.remote_branch }}
           fetch-depth: 0
-          clean: false
+          clean: ${{ !inputs.reuse_build_artifacts }}
 
       - name: Reset to selected commit
         if: needs.check_commits.outputs.remote_commit != ''
         run: git reset --hard "${{ needs.check_commits.outputs.latest_commit_sha }}"
-
-      - name: Discard preserved build artifacts (self-hosted)
-        if: runner.environment == 'self-hosted' && !inputs.reuse_build_artifacts
-        run: rm -rf build_dir staging_dir
 
       - name: Checkout current repository
         uses: actions/checkout@v7
