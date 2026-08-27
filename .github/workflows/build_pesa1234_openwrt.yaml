@@ -35,6 +35,14 @@ on:
         required: false
         default: true
         type: boolean
+      config_file:
+        description: "Config file to build with"
+        required: false
+        default: mt6000.config
+        type: choice
+        options:
+          - mt6000.config
+          - mt6000_testing.config
       testing_kernel:
         description: "Build with testing kernel"
         required: false
@@ -45,7 +53,6 @@ env:
   GH_TOKEN: ${{ github.token }}
   REMOTE_REPOSITORY: pesa1234/openwrt
   TARGET_REPOSITORY: "${{ github.repository }}"
-  CONFIG_FILE: mt6000.config
   KEEP_RELEASES: 3
   KEEP_CACHES: 1
 
@@ -275,7 +282,7 @@ jobs:
 
       - name: Setup configuration and custom files
         run: |
-          cp -fv "builder_repo/config/${{ env.CONFIG_FILE }}" .config
+          cp -fv "builder_repo/config/${{ inputs.config_file }}" .config
           set_kconfig() {   # $1 = symbol, $2 = string value (omit for bool =y)
             local sym="$1" val="${2-}"
             sed -i -e "/^${sym}=/d" -e "/^# ${sym} is not set\$/d" .config
@@ -370,7 +377,7 @@ jobs:
 
           ### 📝 Build Information
           - **Target:** [GL.iNet Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
-          - **Configuration:** [${{ env.CONFIG_FILE }}](https://github.com/$TARGET_REPOSITORY/blob/main/config/${{ env.CONFIG_FILE }})
+          - **Configuration:** [${{ inputs.config_file }}](https://github.com/$TARGET_REPOSITORY/blob/main/config/${{ inputs.config_file }})
           EOF
           package_list=$(sed -n '/<!-- package-list-start -->/,/<!-- package-list-end -->/{ /<!--/d; p }' builder_repo/README.md)
           if [ -z "$package_list" ]; then
