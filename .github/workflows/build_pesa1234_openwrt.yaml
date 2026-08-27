@@ -331,7 +331,11 @@ jobs:
             ccache -s
             echo "=== ccache stats ==="
           fi
-          mkdir -p release
+          if [ -d ./release ]; then
+            rm -rfv ./release/*
+          else
+            mkdir -p ./release
+          fi
           find bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} release/ \;
           mv -v .config release/full.config
           #cd release && 
