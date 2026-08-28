@@ -18,7 +18,7 @@
  extra_command "runtime_atf" "Show runtime ATF/WATF state"
  
  
-@@ -28,7 +35,7 @@
+@@ -24,7 +33,7 @@
  get_if_info()
  {
  	# try to get all wifi and eth net interface.
@@ -27,7 +27,7 @@
  	NET_IF_LIST=`ls /sys/class/net`
  	for vif in $NET_IF_LIST;
  	do
-@@ -38,15 +45,15 @@
+@@ -34,15 +43,15 @@
  			RPS_IF_LIST="$RPS_IF_LIST $vif"
  		fi
  	done;
@@ -46,7 +46,7 @@
  		if [[ $v == *"wmac"* ]]; then
  			WIFI_RADIO1=1
  		fi
-@@ -69,17 +76,17 @@
+@@ -65,17 +74,17 @@
  	do
  		if [[ -f "/sys/module/$v/parameters/wed_enable" ]]; then
  			WED_ENABLE_LIST=`cat /sys/module/$v/parameters/wed_enable`
@@ -70,7 +70,7 @@
  }
  
  # $1: CPU#
-@@ -96,7 +103,7 @@
+@@ -92,7 +101,7 @@
  {
  	eval oval=\$CPU${1}_RPS
  	eval CPU${1}_RPS=\"\$CPU${1}_RPS $2\"
@@ -79,7 +79,7 @@
  }
  
  MT7988()
-@@ -117,7 +124,7 @@
+@@ -113,7 +122,7 @@
  	wifi2_irq_pcie1=
  
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
@@ -88,7 +88,7 @@
  		#TCP Binding
  		iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  		iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -133,9 +140,6 @@
+@@ -129,9 +138,6 @@
  		iptables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  		ip6tables -D FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  		ip6tables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
@@ -98,7 +98,7 @@
  	fi
  
  	for vif in $NET_IF_LIST;
-@@ -144,7 +148,7 @@
+@@ -140,7 +146,7 @@
  			WIFI_IF_LIST="$WIFI_IF_LIST $vif"
  		fi
  	done;
@@ -107,7 +107,7 @@
  	# Please update the CPU binding in each cases.
  	# CPU#_AFFINITY="add binding irq number here"
  	# CPU#_RPS="add binding interface name here"
-@@ -170,10 +174,10 @@
+@@ -166,10 +172,10 @@
  		CPU2_RPS=""
  		CPU3_RPS=""
  	fi
@@ -122,7 +122,7 @@
  }
  
  MT7986()
-@@ -193,7 +197,7 @@
+@@ -189,7 +195,7 @@
  	wifi3_irq=
  
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
@@ -131,7 +131,7 @@
  		#TCP Binding
  		iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  		iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -223,7 +227,6 @@
+@@ -219,7 +225,6 @@
  		#	wifi3_irq=239
  		#fi
  	else
@@ -139,7 +139,7 @@
  		#AX6000 AX7800 - SOC
  		if [[ "$WIFI_RADIO1" -eq "1" ]]; then
  			wifi1_irq=245
-@@ -244,7 +247,7 @@
+@@ -240,7 +245,7 @@
  			WIFI_IF_LIST="$WIFI_IF_LIST $vif"
  		fi
  	done;
@@ -148,7 +148,7 @@
  	# Please update the CPU binding in each cases.
  	# CPU#_AFFINITY="add binding irq number here"
  	# CPU#_RPS="add binding interface name here"
-@@ -270,10 +273,10 @@
+@@ -266,10 +271,10 @@
  		CPU2_RPS="$WIFI_IF_LIST"
  		CPU3_RPS="$WIFI_IF_LIST"
  	fi
@@ -163,7 +163,7 @@
  }
  
  gl_mt6000()
-@@ -358,9 +361,9 @@
+@@ -354,9 +359,9 @@
  
  	BRIDGE_MEMBERS=$(echo $BRIDGE_MEMBERS | tr ' ' '\n' | sort -u | tr '\n' ' ')
  	
@@ -176,7 +176,7 @@
  	
  	# Please update the CPU binding in each cases.
  	# CPU#_AFFINITY="add binding irq number here"
-@@ -385,7 +388,6 @@
+@@ -381,7 +386,6 @@
  		CPU2_RPS="$WAN_IF_LIST $WIFI_IF_LIST"
  		CPU3_RPS="$WAN_IF_LIST $WIFI_IF_LIST"
  	fi
@@ -184,7 +184,7 @@
  }
  
  MT7981()
-@@ -402,7 +404,7 @@
+@@ -398,7 +402,7 @@
  
  	#AX3000
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
@@ -193,7 +193,7 @@
  		#TCP Binding
  		iptables -D FORWARD -p tcp -m conntrack --ctstate	\
  				RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -449,8 +451,8 @@
+@@ -445,8 +449,8 @@
  		CPU0_RPS="$RPS_IF_LIST"
  		CPU1_RPS="$RPS_IF_LIST"
  	fi
@@ -204,7 +204,7 @@
  }
  
  gl_mt3000()
-@@ -494,8 +496,8 @@
+@@ -490,8 +494,8 @@
  		CPU0_RPS="$RPS_IF_LIST"
  		CPU1_RPS="$RPS_IF_LIST"
  	fi
@@ -215,7 +215,7 @@
  }
  
  MT7622()
-@@ -540,36 +542,36 @@
+@@ -536,36 +540,36 @@
  		CPU1_RPS="$RPS_IF_LIST"
  	fi
  
@@ -264,7 +264,7 @@
  		MT7988 $num_of_wifi
  	fi
  }
-@@ -591,25 +593,26 @@
+@@ -587,25 +591,26 @@
  
  set_rps_cpu_bitmap()
  {
@@ -295,7 +295,7 @@
  		done
  		num=`expr $num + 1`
  	done
-@@ -618,7 +621,7 @@
+@@ -614,7 +619,7 @@
  # $1: The default rps value. If rps of the interface is not setup, set $1 to it
  set_rps_cpus()
  {
@@ -304,7 +304,7 @@
  	for i in $RPS_IF_LIST; do
  		var=${VAR_PREFIX}_${i//'-'/_}
  		var=${var//'.'/_}
-@@ -633,7 +636,7 @@
+@@ -629,7 +634,7 @@
  			if [ -n "$cpu_map" ]; then
  				for rxq in /sys/class/net/$i/queues/rx-*; do
  					[ -d "$rxq" ] || continue
@@ -313,7 +313,7 @@
  					echo $cpu_map > "$rxq/rps_cpus"
  				done
  			fi
-@@ -643,27 +646,46 @@
+@@ -639,27 +644,46 @@
  
  set_smp_affinity()
  {
@@ -365,7 +365,7 @@
  VAR_PREFIX="autogen"
  get_if_info
  setup_model
-@@ -676,10 +698,10 @@
+@@ -672,10 +696,10 @@
  		set_rps_cpu_bitmap
  		set_rps_cpus $DEFAULT_RPS
  	else
@@ -378,7 +378,7 @@
  fi
  
  
-@@ -691,7 +713,7 @@
+@@ -687,7 +711,7 @@
  {
  	mtk_offloading_enable=$(uci get advanced.@defaults[0].mtk_offloading_enable 2>/dev/null || echo "x")
  	if [ "$mtk_offloading_enable" == "1" ]; then
@@ -387,7 +387,7 @@
  			#TCP Binding
  			iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  			ip6tables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -702,7 +724,7 @@
+@@ -698,7 +722,7 @@
  			iptables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  			ip6tables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  	elif [ "$mtk_offloading_enable" == 0 ]; then
@@ -396,7 +396,7 @@
  			#TCP Binding
  			iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  			ip6tables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -797,7 +819,7 @@
+@@ -793,7 +817,7 @@
  
  		if [ "$old_content" != "$new_line" ]; then
  			printf '%s\n' "$new_line" > "$MODULE_FILE"
@@ -405,7 +405,7 @@
  			echo "0"
  			return 0
  		fi
-@@ -807,7 +829,7 @@
+@@ -803,7 +827,7 @@
  		runtime_wed=$(cat /sys/module/mt7915e/parameters/wed_enable 2>/dev/null)
  		if { [ "$wed" = "1" ] && [ "$runtime_wed" != "Y" ]; } || \
  		   { [ "$wed" = "0" ] && [ "$runtime_wed" != "N" ]; }; then
@@ -414,7 +414,7 @@
  			echo "0"
  			return 0
  		fi
-@@ -835,6 +857,7 @@
+@@ -831,6 +855,7 @@
  	if [ -e "$MODULE_FILE" ]; then
  		old_content=$(cat "$MODULE_FILE" 2>/dev/null)
  		new_line="mt7915e"
@@ -422,7 +422,7 @@
  
  		set -- $old_content
  		for token in "$@"; do
-@@ -851,7 +874,7 @@
+@@ -847,7 +872,7 @@
  
  		if [ "$old_content" != "$new_line" ]; then
  			printf '%s\n' "$new_line" > "$MODULE_FILE"
@@ -431,7 +431,7 @@
  		fi
  	fi
  
-@@ -892,7 +915,7 @@
+@@ -888,7 +913,7 @@
  	for FILE in /sys/kernel/debug/ieee80211/*/mt76/vow_atf; do
  		[ -e "$FILE" ] || continue
  		found=1
@@ -440,7 +440,7 @@
  		printf '%s\n' "$atf" > "$FILE"
  	done
  
-@@ -947,11 +970,10 @@
+@@ -943,11 +968,10 @@
  		if [ $mtkutil_enable == 1 ]; then
  			if [ $hqos_enable == 1 ]; then
  				/sbin/mtkhnat
@@ -453,7 +453,7 @@
  }
  
  cake_mq_setup()
-@@ -969,48 +991,58 @@
+@@ -965,48 +989,58 @@
  
  	case "$value" in
  		''|*[!0-9]*)
@@ -524,7 +524,7 @@
  }
  
  service_triggers() {
-@@ -1018,52 +1050,55 @@
+@@ -1014,52 +1048,55 @@
  }
  
  start_service() {
