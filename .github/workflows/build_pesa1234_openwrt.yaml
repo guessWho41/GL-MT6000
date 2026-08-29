@@ -248,8 +248,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: NilsRo/usteer-ng
-          #ref: development
-          #path: package/usteer-ng
           path: usteer-ng
           fetch-depth: 0
 
@@ -258,7 +256,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: hudra0/qosmate
-      #    ref: main
           path: feeds/packages/net/qosmate
 
       - name: Checkout luci-app-qosmate repository
@@ -266,7 +263,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: hudra0/luci-app-qosmate
-      #    ref: main
           path: feeds/luci/applications/luci-app-qosmate
 
       - name: Pin usteer-ng version
