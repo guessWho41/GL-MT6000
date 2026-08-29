@@ -5,7 +5,6 @@ Repository for building [Pesa1234's](https://forum.openwrt.org/u/pesa1234) [GL.i
 <!-- package-list-start -->
 - Dropbear replaced with OpenSSH and SFTP with [hardened config](https://github.com/cjom/GL-MT6000/tree/main/files/etc/ssh) by [Cjom](https://forum.openwrt.org/u/cjom)
 - Mbed TLS relaced with OpenSSL
-- uHTTPd replaced with nginx
 - Wi-Fi UCODE scripts
 - AdBlock-Fast
 - Bridger
