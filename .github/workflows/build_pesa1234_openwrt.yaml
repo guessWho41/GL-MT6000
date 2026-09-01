@@ -378,8 +378,6 @@ jobs:
 
       - name: Clean up old builds
         run: |
-          echo "=== builder_repo contents ==="
-          ls -1
           for i in $(seq 1 10); do
             if gh api "repos/$TARGET_REPOSITORY/releases" --jq '.[].tag_name' | grep -qx "$RELEASE_TAG"; then
               break
