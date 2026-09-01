@@ -53,7 +53,7 @@ env:
   GH_TOKEN: ${{ github.token }}
   REMOTE_REPOSITORY: pesa1234/openwrt
   TARGET_REPOSITORY: "${{ github.repository }}"
-  KEEP_RELEASES: 3
+  KEEP_RELEASES: 2
   KEEP_CACHES: 1
 
 jobs:
