@@ -378,6 +378,8 @@ jobs:
 
       - name: Clean up old builds
         run: |
+          echo "=== builder_repo contents ==="
+          ls -1
           for i in $(seq 1 10); do
             if gh api "repos/$TARGET_REPOSITORY/releases" --jq '.[].tag_name' | grep -qx "$RELEASE_TAG"; then
               break
@@ -391,10 +393,14 @@ jobs:
           echo "=== Releases that will be deleted ==="
           echo "$releases" | jq -r ".[${{ env.KEEP_RELEASES }}:] | .[] | \"\(.created_at)  id=\(.id)  tag=\(.tag_name)\""
           cd builder_repo
+          echo "=== builder_repo contents ==="
+          ls -1
           git fetch origin main
           git reset --hard origin/main
           echo "$releases" | jq -r ".[${{ env.KEEP_RELEASES }}:] | .[] | \"\(.id) \(.tag_name)\"" | while read id tag; do
             gh api -X DELETE "repos/$TARGET_REPOSITORY/releases/$id" && gh api -X DELETE "repos/$TARGET_REPOSITORY/git/refs/tags/$tag" 2>/dev/null || true
+            echo "=== builder_repo contents ==="
+            ls -1
             if [ -d "$tag" ]; then
               rm -rfv "$tag"
               git add -A
