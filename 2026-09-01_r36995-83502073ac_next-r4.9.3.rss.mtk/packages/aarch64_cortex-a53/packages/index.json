@@ -1,0 +1,31 @@
+{
+  "version": 2,
+  "architecture": "aarch64_cortex-a53",
+  "packages": {
+    "adblock-fast": "1.2.4-r4",
+    "btop": "1.4.7-r1",
+    "cgi-io": "2026.07.21~31cb3c89-r1",
+    "coreutils": "9.11-r1",
+    "coreutils-sort": "9.11-r1",
+    "curl": "8.21.0-r1",
+    "ddns-scripts": "2.8.4-r2",
+    "ddns-scripts-services": "2.8.4-r2",
+    "dnscrypt-proxy2": "2.1.18-r1",
+    "gawk": "5.4.1-r1",
+    "grep": "3.12-r2",
+    "htop": "3.5.1-r1",
+    "irqbalance": "1.9.5-r1",
+    "libcap-ng": "0.8.4-r2",
+    "libcurl": "8.21.0-r1",
+    "libnghttp2": "1.70.0-r1",
+    "libsensors": "3.6.2-r6",
+    "miniupnpd-nftables": "2.3.9-r3",
+    "mwan3": "3.7_beta2-r1",
+    "openssh-keygen": "10.5_p1-r1",
+    "openssh-moduli": "10.5_p1-r1",
+    "openssh-server": "10.5_p1-r1",
+    "openssh-sftp-server": "10.5_p1-r1",
+    "sed": "4.10-r1",
+    "usteer-ng": "2026.08.10~2ad4a528-r1"
+  }
+}
