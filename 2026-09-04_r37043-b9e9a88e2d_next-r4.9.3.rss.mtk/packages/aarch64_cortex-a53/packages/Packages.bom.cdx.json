@@ -1,0 +1,377 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "serialNumber": "urn:uuid:f5427fc5-e275-4aff-bd36-cc5b09f7a4f9",
+  "version": "1",
+  "metadata": {
+    "timestamp": "2026-09-04T18:13:19Z"
+  },
+  "components": [
+    {
+      "name": "adblock-fast",
+      "version": "1.2.4-r4",
+      "cpe": "cpe:/a:mossdef:adblock-fast",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "AGPL-3.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "btop",
+      "version": "1.4.7-r1",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "Apache-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "cgi-io",
+      "version": "2026.07.21~31cb3c89-r1",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "coreutils",
+      "version": "9.11-r1",
+      "cpe": "cpe:/a:gnu:coreutils",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-3.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "coreutils-sort",
+      "version": "9.11-r1",
+      "cpe": "cpe:/a:gnu:coreutils",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-3.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "curl",
+      "version": "8.21.0-r1",
+      "cpe": "cpe:/a:haxx:libcurl",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ddns-scripts",
+      "version": "2.8.4-r3",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ddns-scripts-services",
+      "version": "2.8.4-r3",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "dnscrypt-proxy2",
+      "version": "2.1.18-r1",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "ISC"
+          }
+        }
+      ]
+    },
+    {
+      "name": "gawk",
+      "version": "5.4.1-r1",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-3.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "grep",
+      "version": "3.12-r2",
+      "cpe": "cpe:/a:gnu:grep",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-3.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "htop",
+      "version": "3.5.1-r1",
+      "cpe": "cpe:/a:htop:htop",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "irqbalance",
+      "version": "1.9.5-r1",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "libcap-ng",
+      "version": "0.8.4-r2",
+      "cpe": "cpe:/a:libcap-ng_project:libcap-ng",
+      "type": "library",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0-or-later"
+          }
+        },
+        {
+          "license": {
+            "name": "LGPL-2.1-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "libcurl4",
+      "version": "8.21.0-r1",
+      "cpe": "cpe:/a:haxx:libcurl",
+      "type": "library",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "libnghttp2-14",
+      "version": "1.70.0-r1",
+      "cpe": "cpe:/a:nghttp2:nghttp2",
+      "type": "library",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "libsensors5",
+      "version": "3.6.2-r6",
+      "cpe": "cpe:/a:lm_sensors:lm_sensors",
+      "type": "library",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0-or-later"
+          }
+        },
+        {
+          "license": {
+            "name": "LGPL-2.1-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "miniupnpd-nftables",
+      "version": "2.3.9-r3",
+      "cpe": "cpe:/a:miniupnp_project:miniupnpd",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-3-Clause"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mwan3",
+      "version": "3.7_beta2-r1",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "openssh-keygen",
+      "version": "10.5_p1-r1",
+      "cpe": "cpe:/a:openbsd:openssh",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-2-Clause"
+          }
+        },
+        {
+          "license": {
+            "name": "BSD-3-Clause"
+          }
+        },
+        {
+          "license": {
+            "name": "ISC"
+          }
+        }
+      ]
+    },
+    {
+      "name": "openssh-moduli",
+      "version": "10.5_p1-r1",
+      "cpe": "cpe:/a:openbsd:openssh",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-2-Clause"
+          }
+        },
+        {
+          "license": {
+            "name": "BSD-3-Clause"
+          }
+        },
+        {
+          "license": {
+            "name": "ISC"
+          }
+        }
+      ]
+    },
+    {
+      "name": "openssh-server",
+      "version": "10.5_p1-r1",
+      "cpe": "cpe:/a:openbsd:openssh",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-2-Clause"
+          }
+        },
+        {
+          "license": {
+            "name": "BSD-3-Clause"
+          }
+        },
+        {
+          "license": {
+            "name": "ISC"
+          }
+        }
+      ]
+    },
+    {
+      "name": "openssh-sftp-server",
+      "version": "10.5_p1-r1",
+      "cpe": "cpe:/a:openbsd:openssh",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-2-Clause"
+          }
+        },
+        {
+          "license": {
+            "name": "BSD-3-Clause"
+          }
+        },
+        {
+          "license": {
+            "name": "ISC"
+          }
+        }
+      ]
+    },
+    {
+      "name": "sed",
+      "version": "4.10-r1",
+      "cpe": "cpe:/a:gnu:sed",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-3.0-or-later"
+          }
+        }
+      ]
+    },
+    {
+      "name": "usteer-ng",
+      "version": "2026.08.10~2ad4a528-r1",
+      "type": "application",
+      "licenses": [
+        {
+          "license": {
+            "name": "GPL-2.0-only"
+          }
+        }
+      ]
+    }
+  ]
+}
