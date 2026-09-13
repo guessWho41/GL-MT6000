@@ -1,12 +1,13 @@
 --- a/target/linux/mediatek/filogic/base-files/etc/init.d/advanced_setup
 +++ b/target/linux/mediatek/filogic/base-files/etc/init.d/advanced_setup
-@@ -1,13 +1,21 @@
+@@ -1,13 +1,22 @@
  #!/bin/sh /etc/rc.common
  
  START=99
 +STOP=10
  USE_PROCD=1
  STARTUP_MARKER=/tmp/smp_affinity_started
++IRQBALANCE_IRQS=/tmp/smp_affinity_irqs
  DEFAULT_STARTUP_DELAY=30
  
 -extra_command "runtime_atf" "Show runtime ATF/WATF state"
@@ -24,7 +25,7 @@
  
  smp_mt76() {
  OPTIMIZED_FOR="$1"
-@@ -31,7 +39,7 @@
+@@ -31,7 +40,7 @@
  	local radio_devices
  
  	# try to get all wifi and eth net interface.
@@ -33,7 +34,7 @@
  	NET_IF_LIST=`ls /sys/class/net`
  	for vif in $NET_IF_LIST;
  	do
-@@ -41,12 +49,12 @@
+@@ -41,12 +50,12 @@
  			RPS_IF_LIST="$RPS_IF_LIST $vif"
  		fi
  	done;
@@ -48,7 +49,7 @@
  	radio_devices=""
  	for phy_path in /sys/class/ieee80211/*; do
  		[ -e "$phy_path" ] || continue
-@@ -64,7 +72,7 @@
+@@ -64,7 +73,7 @@
  		radio_devices="$radio_devices $radio_device"
  
  		NUM_WIFI_CARD=`expr $NUM_WIFI_CARD + 1`
@@ -57,7 +58,7 @@
  		case "$radio_device" in
  			*/pci0000:*) WIFI_RADIO2=1 ;;
  			*/pci0001:*) WIFI_RADIO3=1 ;;
-@@ -72,22 +80,21 @@
+@@ -72,22 +81,21 @@
  		esac
  	done
  
@@ -86,7 +87,7 @@
  }
  
  # $1: CPU#
-@@ -104,7 +111,7 @@
+@@ -104,7 +112,7 @@
  {
  	eval oval=\$CPU${1}_RPS
  	eval CPU${1}_RPS=\"\$CPU${1}_RPS $2\"
@@ -95,7 +96,7 @@
  }
  
  MT7988()
-@@ -125,7 +132,7 @@
+@@ -125,7 +133,7 @@
  	wifi2_irq_pcie1=
  
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
@@ -104,7 +105,7 @@
  		#TCP Binding
  		iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  		iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -141,9 +148,6 @@
+@@ -141,9 +149,6 @@
  		iptables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  		ip6tables -D FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  		ip6tables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
@@ -114,7 +115,7 @@
  	fi
  
  	for vif in $NET_IF_LIST;
-@@ -152,7 +156,7 @@
+@@ -152,7 +157,7 @@
  			WIFI_IF_LIST="$WIFI_IF_LIST $vif"
  		fi
  	done;
@@ -123,7 +124,7 @@
  	# Please update the CPU binding in each cases.
  	# CPU#_AFFINITY="add binding irq number here"
  	# CPU#_RPS="add binding interface name here"
-@@ -178,10 +182,10 @@
+@@ -178,10 +183,10 @@
  		CPU2_RPS=""
  		CPU3_RPS=""
  	fi
@@ -138,7 +139,7 @@
  }
  
  MT7986()
-@@ -201,7 +205,7 @@
+@@ -201,7 +206,7 @@
  	wifi3_irq=
  
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
@@ -147,7 +148,7 @@
  		#TCP Binding
  		iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  		iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -231,7 +235,7 @@
+@@ -231,7 +236,7 @@
  		#	wifi3_irq=239
  		#fi
  	else
@@ -156,7 +157,7 @@
  		#AX6000 AX7800 - SOC
  		if [[ "$WIFI_RADIO1" -eq "1" ]]; then
  			wifi1_irq=245
-@@ -252,7 +256,7 @@
+@@ -252,7 +257,7 @@
  			WIFI_IF_LIST="$WIFI_IF_LIST $vif"
  		fi
  	done;
@@ -165,7 +166,7 @@
  	# Please update the CPU binding in each cases.
  	# CPU#_AFFINITY="add binding irq number here"
  	# CPU#_RPS="add binding interface name here"
-@@ -278,10 +282,10 @@
+@@ -278,10 +283,10 @@
  		CPU2_RPS="$WIFI_IF_LIST"
  		CPU3_RPS="$WIFI_IF_LIST"
  	fi
@@ -180,7 +181,7 @@
  }
  
  gl_mt6000()
-@@ -299,7 +303,7 @@
+@@ -299,7 +304,7 @@
  	wifi1_irq=
  	wifi2_irq=
  	wifi3_irq=
@@ -189,7 +190,7 @@
  	if [[ "$WIFI_RADIO1" -eq "1" ]]; then
  		if [[ "$WED_ENABLE" -eq "1" ]]; then
  			wifi1_irq=237
-@@ -314,7 +318,7 @@
+@@ -314,7 +319,7 @@
  			WIFI_IF_LIST="$WIFI_IF_LIST $vif"
  		fi
  	done;
@@ -198,7 +199,7 @@
  	WAN_IF_LIST=""
  
  	for iface in $(uci show network | grep "=interface" | cut -d '.' -f 2 | cut -d '=' -f1 | sort -u); do
-@@ -370,9 +374,9 @@
+@@ -370,9 +375,9 @@
  
  	BRIDGE_MEMBERS=$(echo $BRIDGE_MEMBERS | tr ' ' '\n' | sort -u | tr '\n' ' ')
  	
@@ -211,7 +212,7 @@
  	
  	# Please update the CPU binding in each cases.
  	# CPU#_AFFINITY="add binding irq number here"
-@@ -397,7 +401,6 @@
+@@ -397,7 +402,6 @@
  		CPU2_RPS="$WAN_IF_LIST $WIFI_IF_LIST"
  		CPU3_RPS="$WAN_IF_LIST $WIFI_IF_LIST"
  	fi
@@ -219,7 +220,7 @@
  }
  
  MT7981()
-@@ -414,7 +417,7 @@
+@@ -414,7 +418,7 @@
  
  	#AX3000
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
@@ -228,7 +229,7 @@
  		#TCP Binding
  		iptables -D FORWARD -p tcp -m conntrack --ctstate	\
  				RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -461,8 +464,8 @@
+@@ -461,8 +465,8 @@
  		CPU0_RPS="$RPS_IF_LIST"
  		CPU1_RPS="$RPS_IF_LIST"
  	fi
@@ -239,7 +240,7 @@
  }
  
  gl_mt3000()
-@@ -479,7 +482,7 @@
+@@ -479,7 +483,7 @@
  
  	#AX3000
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
@@ -248,7 +249,7 @@
  		if [[ "$WIFI_RADIO1" -eq "1" ]]; then
  			wifi1_irq=237
  		fi
-@@ -506,8 +509,8 @@
+@@ -506,8 +510,8 @@
  		CPU0_RPS="$RPS_IF_LIST"
  		CPU1_RPS="$RPS_IF_LIST"
  	fi
@@ -259,7 +260,7 @@
  }
  
  MT7622()
-@@ -552,36 +555,36 @@
+@@ -552,36 +556,36 @@
  		CPU1_RPS="$RPS_IF_LIST"
  	fi
  
@@ -308,7 +309,7 @@
  		MT7988 $num_of_wifi
  	fi
  }
-@@ -602,25 +605,26 @@
+@@ -602,25 +606,26 @@
  
  set_rps_cpu_bitmap()
  {
@@ -339,7 +340,7 @@
  		done
  		num=`expr $num + 1`
  	done
-@@ -629,7 +633,7 @@
+@@ -629,7 +634,7 @@
  # $1: The default rps value. If rps of the interface is not setup, set $1 to it
  set_rps_cpus()
  {
@@ -348,7 +349,7 @@
  	for i in $RPS_IF_LIST; do
  		var=${VAR_PREFIX}_${i//'-'/_}
  		var=${var//'.'/_}
-@@ -644,7 +648,7 @@
+@@ -644,7 +649,7 @@
  			if [ -n "$cpu_map" ]; then
  				for rxq in /sys/class/net/$i/queues/rx-*; do
  					[ -d "$rxq" ] || continue
@@ -357,7 +358,7 @@
  					echo $cpu_map > "$rxq/rps_cpus"
  				done
  			fi
-@@ -654,30 +658,52 @@
+@@ -654,30 +659,53 @@
  
  set_smp_affinity()
  {
@@ -369,6 +370,7 @@
 +		log_msg "[smp_affinity] irqbalance is enabled"
 +		irqbalance_excluded_irqs=$(uci get irqbalance.@irqbalance[0].banirq 2>/dev/null)
 +		irqbalance_settings_modified=0
++		true > "$IRQBALANCE_IRQS"
 +	fi
  	while [ "$num" -lt "$NUM_OF_CPU" ];do
  		eval smp_list=\$CPU${num}_AFFINITY
@@ -393,14 +395,14 @@
 +				1:*" $virq "*) log_msg "[smp_affinity] Virtual IRQ $virq is already excluded from irqbalance" ;;
 +				1:*)
 +					log_msg "[smp_affinity] Adding virtual IRQ $virq to irqbalance exclusions"
-+					echo $virq >> /tmp/smp_affinity_irqs
++					echo "$virq" >> "$IRQBALANCE_IRQS"
 +					irqbalance_settings_modified=1
 +					;;
 +			esac
  		done
  		num=`expr $num + 1`
  	done
-+	if [ -f /tmp/smp_affinity_irqs ] && [ "$irqbalance_settings_modified" == 1 ]; then
++	if [ -f "$IRQBALANCE_IRQS" ] && [ "$irqbalance_settings_modified" == 1 ]; then
 +		log_msg "[smp_affinity] Applying irqbalance changes"
 +		if /etc/init.d/irqbalance status > /dev/null 2>&1; then
 +			/etc/init.d/irqbalance restart
@@ -416,7 +418,7 @@
  VAR_PREFIX="autogen"
  get_if_info
  setup_model
-@@ -690,10 +716,10 @@
+@@ -690,10 +718,10 @@
  		set_rps_cpu_bitmap
  		set_rps_cpus $DEFAULT_RPS
  	else
@@ -429,7 +431,7 @@
  fi
  
  
-@@ -705,7 +731,7 @@
+@@ -705,7 +733,7 @@
  {
  	mtk_offloading_enable=$(uci get advanced.@defaults[0].mtk_offloading_enable 2>/dev/null || echo "x")
  	if [ "$mtk_offloading_enable" == "1" ]; then
@@ -438,7 +440,7 @@
  			#TCP Binding
  			iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  			ip6tables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -716,7 +742,7 @@
+@@ -716,7 +744,7 @@
  			iptables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  			ip6tables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  	elif [ "$mtk_offloading_enable" == 0 ]; then
@@ -447,7 +449,7 @@
  			#TCP Binding
  			iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  			ip6tables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -811,7 +837,7 @@
+@@ -811,7 +839,7 @@
  
  		if [ "$old_content" != "$new_line" ]; then
  			printf '%s\n' "$new_line" > "$MODULE_FILE"
@@ -456,7 +458,7 @@
  			echo "0"
  			return 0
  		fi
-@@ -821,7 +847,7 @@
+@@ -821,7 +849,7 @@
  		runtime_wed=$(cat /sys/module/mt7915e/parameters/wed_enable 2>/dev/null)
  		if { [ "$wed" = "1" ] && [ "$runtime_wed" != "Y" ]; } || \
  		   { [ "$wed" = "0" ] && [ "$runtime_wed" != "N" ]; }; then
@@ -465,7 +467,7 @@
  			echo "0"
  			return 0
  		fi
-@@ -865,7 +891,7 @@
+@@ -865,7 +893,7 @@
  
  		if [ "$old_content" != "$new_line" ]; then
  			printf '%s\n' "$new_line" > "$MODULE_FILE"
@@ -474,7 +476,7 @@
  		fi
  	fi
  
-@@ -906,7 +932,7 @@
+@@ -906,7 +934,7 @@
  	for FILE in /sys/kernel/debug/ieee80211/*/mt76/vow_atf; do
  		[ -e "$FILE" ] || continue
  		found=1
@@ -483,7 +485,7 @@
  		printf '%s\n' "$atf" > "$FILE"
  	done
  
-@@ -961,11 +987,10 @@
+@@ -961,11 +989,10 @@
  		if [ $mtkutil_enable == 1 ]; then
  			if [ $hqos_enable == 1 ]; then
  				/sbin/mtkhnat
@@ -496,7 +498,7 @@
  }
  
  cake_mq_setup()
-@@ -983,48 +1008,61 @@
+@@ -983,48 +1010,61 @@
  
  	case "$value" in
  		''|*[!0-9]*)
@@ -561,12 +563,98 @@
 +{
 +	if [ -f /tmp/smp_affinity_irqs ]; then
 +		log_msg "[smp_affinity] Removing irqbalance exclusions set by smp_affinity"
-+		rm /tmp/smp_affinity_irqs
++		rm "$IRQBALANCE_IRQS"
 +		if [ ! -e /tmp/run/procd.shutdown ] && /etc/init.d/irqbalance status >/dev/null 2>&1; then
 +			/etc/init.d/irqbalance restart
 +		fi
  	fi
 -	
+ }
+ 
+ service_triggers() {
+@@ -1045,7 +1085,7 @@
+ 	sync_mt7915e_module_options >/dev/null
+ 	advanced_runtime_setup
+ 	echo 1 > "$STARTUP_MARKER"
+-	logger -t advanced_setup "advanced_setup finished"
++	log_msg "Finished"
+ }
+ 
+ run_deferred() {
+@@ -1056,7 +1096,7 @@
+ 	esac
+ 
+ 	[ "$delay" -eq 0 ] || sleep "$delay"
+-	logger -t advanced_setup "smp_affinity: deferred setup starting"
++	log_msg "Starting"
+ 	run_advanced_setup
+ }
+ 
+@@ -1064,7 +1104,9 @@
+ 	local delay=0
+ 
+ 	[ -f "$STARTUP_MARKER" ] || delay=$(get_startup_delay)
+-	logger -t advanced_setup "smp_affinity: setup scheduled after $delay sec (non-blocking)"
++	if [ "$delay" -ne 0 ]; then
++		log_msg "Setup is scheduled to run in $delay seconds (non-blocking)"
++	fi
+ 
+ 	procd_open_instance deferred_setup
+ 	procd_set_param command "$initscript" run_deferred "$delay"
+@@ -1072,36 +1114,37 @@
+ }
+ 
+ reload_service() {
+-    trigger="$1"
+-    case "$trigger" in
+-	        atf)
+-			logger -t advanced_setup "advanced_setup atf"
++	trigger="$1"
++	case "$trigger" in
++		atf)
++			log_msg "Reloading HW-ATF settings"
+ 			sync_mt7915e_airtime_module_options >/dev/null
+ 			hw_atf_setup
+-	            ;;
+-        usb)
+-			logger -t advanced_setup "advanced_setup usb"
+-            usb_setup
+-            ;;
+-	        wed)
+-			logger -t advanced_setup "advanced_setup wed"
++			;;
++		usb)
++			log_msg "Reloading USB settings"
++			usb_setup
++			;;
++		wed)
++			log_msg "Reloading WED settings"
+ 			sync_mt7915e_wed_module_options >/dev/null
+ 			;;
+ 		cake)
+-			logger -t advanced_setup "advanced_setup cake"
++			log_msg "Reloading CAKE_MQ settings"
+ 			cake_mq_setup "$2"
+ 			;;
+-        *)
+-			logger -t advanced_setup "advanced_setup generic"
++		*)
++			log_msg "Reloading all settings"
+ 			if [ ! -f "$STARTUP_MARKER" ]; then
+-				logger -t advanced_setup "initial deferred setup still pending; reload will use the latest configuration"
++				log_msg "Initial setup has not run yet, it will pick up the latest configuration"
+ 				return 0
+ 			fi
++			clean_irqbalance_config
+ 			run_advanced_setup
+ 			;;
+-    esac
++	esac
+ }
+ 
+ stop_service() {
+-    logger -t advanced_setup "No stop actions defined"
++	clean_irqbalance_config
  }
  
  service_triggers() {
