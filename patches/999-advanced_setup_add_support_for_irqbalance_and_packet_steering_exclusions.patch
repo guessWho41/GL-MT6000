@@ -498,7 +498,7 @@
  }
  
  cake_mq_setup()
-@@ -983,48 +1010,61 @@
+@@ -983,48 +1010,60 @@
  
  	case "$value" in
  		''|*[!0-9]*)
@@ -546,7 +546,6 @@
  	if [ "$status2" -eq 1 ]; then
 -		logger -s "advanced_setup: USB Speed is set to 2.0"
 +		log_msg "[USB] Port speed is now 2.0"
-+	fi
 +	else
 +		log_msg "[USB] Port speed is now 3.0"
  	fi
@@ -572,7 +571,7 @@
  }
  
  service_triggers() {
-@@ -1045,7 +1085,7 @@
+@@ -1045,7 +1084,7 @@
  	sync_mt7915e_module_options >/dev/null
  	advanced_runtime_setup
  	echo 1 > "$STARTUP_MARKER"
@@ -581,7 +580,7 @@
  }
  
  run_deferred() {
-@@ -1056,7 +1096,7 @@
+@@ -1056,7 +1095,7 @@
  	esac
  
  	[ "$delay" -eq 0 ] || sleep "$delay"
@@ -590,7 +589,7 @@
  	run_advanced_setup
  }
  
-@@ -1064,7 +1104,9 @@
+@@ -1064,7 +1103,9 @@
  	local delay=0
  
  	[ -f "$STARTUP_MARKER" ] || delay=$(get_startup_delay)
@@ -601,7 +600,7 @@
  
  	procd_open_instance deferred_setup
  	procd_set_param command "$initscript" run_deferred "$delay"
-@@ -1072,36 +1114,37 @@
+@@ -1072,36 +1113,37 @@
  }
  
  reload_service() {
