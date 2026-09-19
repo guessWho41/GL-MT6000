@@ -23,38 +23,101 @@
 
 . /lib/functions.sh
 
+STATE_DIR="/var/run/mwan3-ddns"
+
 is_online() {
 	[ -n "$1" ] || return 1
 	echo "$MWAN3_STATUS" | jsonfilter -e "@.interfaces.$1.status" | grep -qx online
 }
 
+log_once() {
+	local tag msg state last
+	tag="$1"
+	msg="$2"
+	state="${STATE_DIR}/log.${tag}"
+
+	last=$(cat "$state" 2>/dev/null)
+	[ "$last" = "$msg" ] && return
+
+	mkdir -p "$STATE_DIR"
+	echo "$msg" > "$state"
+	logger -t mwan3-ddns "$msg"
+}
+
+resolve_target_by_metric() {
+	local family route dump iface up metric best_if best_metric
+	family="$1"
+
+	case "$family" in
+		ipv4) route="0.0.0.0" ;;
+		ipv6) route="::" ;;
+		*)    return ;;
+	esac
+
+	dump=$(ubus call network.interface dump 2>/dev/null)
+	[ -n "$dump" ] || return
+
+	for iface in $(echo "$dump" | jsonfilter -e "@.interface[@.route[@.target='$route' && !@.table]].interface"); do
+		up=$(echo "$dump" | jsonfilter -e "@.interface[@.interface='$iface'].up")
+		[ "$up" = "true" ] || [ "$up" = "1" ] || continue
+		metric=$(echo "$dump" | jsonfilter -e "@.interface[@.interface='$iface'].metric")
+		[ -n "$metric" ] || metric=0
+		if [ -z "$best_if" ] || [ "$metric" -lt "$best_metric" ]; then
+			best_if="$iface"
+			best_metric="$metric"
+		fi
+	done
+
+	[ -n "$best_if" ] || {
+		log_once "nodefault.$family" "[$family] no default rule and no default route, sections left unmanaged"
+		return
+	}
+
+	log_once "metric.$family" "[$family] no default rule, using $best_if by route metric $best_metric"
+	echo "$best_if"
+}
+
 resolve_target() {
-	local family rule policy members primary backup
+	local family rule policy iface found
 	family="$1"
 	rule="$2"
 
 	policy=$(uci -q get mwan3."$rule".use_policy)
-	[ -n "$policy" ] || return
-
-	members=$(echo "$MWAN3_STATUS" | jsonfilter -e "@.policies.${family}.${policy}[0].interface" -e "@.policies.${family}.${policy}[1].interface" 2>/dev/null)
-	primary=$(echo "$members" | sed -n '1p')
-	backup=$(echo "$members" | sed -n '2p')
-
-	[ -n "$primary" ] || {
-		logger -t mwan3-ddns "[$family] Policy $policy not found in mwan3 status"
+	[ -n "$policy" ] || {
+		resolve_target_by_metric "$family"
 		return
 	}
 
-	if is_online "$primary"; then
-		echo "$primary"
-	elif is_online "$backup"; then
-		echo "$backup"
-	fi
+	found=$(echo "$MWAN3_STATUS" | jsonfilter -e "@.policies.${family}.${policy}[*].interface" 2>/dev/null)
+	[ -n "$found" ] || {
+		log_once "nopolicy.$family" "[$family] policy $policy absent from mwan3 status"
+		return
+	}
+
+	for iface in $found; do
+		is_online "$iface" && { echo "$iface"; return; }
+	done
+
+	log_once "alldown.$family" "[$family] no online member in policy $policy"
 }
 
-_ddns_handle_section() {
-	local section enabled use_ipv6 family target current ip_source
+set_if_changed() {
+	local section option value current
 	section="$1"
+	option="$2"
+	value="$3"
+
+	config_get current "$section" "$option"
+	[ "$current" = "$value" ] && return
+
+	uci set ddns."$section"."$option"="$value"
+	changed=1
+}
+
+handle_section() {
+	local section enabled use_ipv6 family target ip_source bind changed
+	section="$1"
+	changed=""
 
 	config_get enabled "$section" enabled
 	[ "$enabled" = "1" ] || return
@@ -62,26 +125,54 @@ _ddns_handle_section() {
 	config_get use_ipv6 "$section" use_ipv6
 	if [ "$use_ipv6" = "1" ]; then
 		family="ipv6"
-		target="$_TARGET_V6"
+		target="$TARGET_V6"
 	else
 		family="ipv4"
-		target="$_TARGET_V4"
+		target="$TARGET_V4"
 	fi
 	[ -n "$target" ] || return
 
-	config_get current "$section" interface
-	[ "$current" != "$target" ] || return
-
-	logger -t mwan3-ddns "[$family] Switching '$section' from $current to $target"
-	uci set ddns."$section".interface="$target"
 	config_get ip_source "$section" ip_source
+	[ -n "$ip_source" ] || ip_source="network"
+	config_get bind "$section" bind_network
+
+	if [ "$ip_source" = "web" ] && [ -z "$bind" ]; then
+		eval "WEB_UNBOUND_${family}=1"
+		return
+	fi
+
+	set_if_changed "$section" interface "$target"
+
 	case "$ip_source" in
-		network)   uci set ddns."$section".ip_network="$target" ;;
-		web)       uci set ddns."$section".bind_network="$target" ;;
-		interface) uci set ddns."$section".ip_interface="$target" ;;
-		*)         logger -t mwan3-ddns "[$family] Unknown ip_source for '$section', skipping network binding" ;;
+		network)   set_if_changed "$section" ip_network "$target" ;;
+		interface) set_if_changed "$section" ip_interface "$target" ;;
+		web)       set_if_changed "$section" bind_network "$target" ;;
+		*)         log_once "ipsrc.$section" "[$family] unknown ip_source '$ip_source' for '$section'" ;;
 	esac
-	_DDNS_MODIFIED=1
+
+	[ -n "$changed" ] || return
+	logger -t mwan3-ddns "[$family] pointed '$section' at $target"
+	CONFIG_MODIFIED=1
+	RESTART_NEEDED=1
+}
+
+web_restart_check() {
+	local family target unbound state last
+	family="$1"
+	target="$2"
+	eval "unbound=\$WEB_UNBOUND_${family}"
+
+	[ -n "$unbound" ] || return
+	[ -n "$target" ] || return
+
+	state="${STATE_DIR}/web.${family}"
+	last=$(cat "$state" 2>/dev/null)
+	[ "$last" = "$target" ] && return
+
+	mkdir -p "$STATE_DIR"
+	echo "$target" > "$state"
+	logger -t mwan3-ddns "[$family] active WAN now $target, refreshing web-sourced sections"
+	RESTART_NEEDED=1
 }
 
 case "$ACTION" in
@@ -91,19 +182,30 @@ case "$ACTION" in
 		/etc/init.d/ddns enabled 2>/dev/null || exit 0
 
 		MWAN3_STATUS=$(ubus call mwan3 status 2>/dev/null)
+		[ -n "$MWAN3_STATUS" ] || {
+			logger -t mwan3-ddns "mwan3 status unavailable, skipping"
+			exit 0
+		}
 
-		_TARGET_V4=$(resolve_target ipv4 default_rule_v4)
-		_TARGET_V6=$(resolve_target ipv6 default_rule_v6)
-		[ -n "$_TARGET_V4$_TARGET_V6" ] || exit 0
+		TARGET_V4=$(resolve_target ipv4 default_rule_v4)
+		TARGET_V6=$(resolve_target ipv6 default_rule_v6)
+		[ -n "$TARGET_V4$TARGET_V6" ] || exit 0
 
-		_DDNS_MODIFIED=""
+		CONFIG_MODIFIED=""
+		RESTART_NEEDED=""
+		WEB_UNBOUND_ipv4=""
+		WEB_UNBOUND_ipv6=""
+
 		config_load ddns
-		config_foreach _ddns_handle_section service
+		config_foreach handle_section service
 
-		[ -n "$_DDNS_MODIFIED" ] || exit 0
-		logger -t mwan3-ddns "Applying DDNS changes"
-		uci commit ddns
-		/etc/init.d/ddns restart
+		web_restart_check ipv4 "$TARGET_V4"
+		web_restart_check ipv6 "$TARGET_V6"
 
+		[ -n "$CONFIG_MODIFIED" ] && {
+			logger -t mwan3-ddns "committing ddns changes"
+			uci commit ddns
+		}
+		[ -n "$RESTART_NEEDED" ] && /etc/init.d/ddns restart
 		;;
 esac
