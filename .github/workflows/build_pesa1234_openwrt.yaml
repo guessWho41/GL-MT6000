@@ -208,8 +208,7 @@ jobs:
             build_dir/toolchain-*
             staging_dir/toolchain-*
           #key: toolchain-${{ runner.arch }}-${{ hashFiles('toolchain/**/Makefile') }}-${{ github.run_id }}
-          #restore-keys: toolchain-${{ hashFiles('toolchain/**/Makefile') }}-
-          key: toolchain-${{ hashFiles('toolchain/**/Makefile') }}-
+          restore-keys: toolchain-${{ hashFiles('toolchain/**/Makefile') }}-
 
       - name: Refresh toolchain timestamps (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
@@ -288,7 +287,7 @@ jobs:
             set_kconfig CONFIG_TESTING_KERNEL
           fi
           #rsync -a builder_repo/files ./
-          ln -sfv builder_repo/files files
+          ln -sfnv builder_repo/files files
           #rsync -a builder_repo/patches patches
           while IFS= read -r -d '' file; do
             patch -f -p1 -i "${file}"
