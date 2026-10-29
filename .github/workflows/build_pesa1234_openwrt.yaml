@@ -154,8 +154,7 @@ jobs:
         with:
           path: ~/.cache/ccache
           #key: ccache-${{ github.run_id }}
-          #restore-keys: ccache-
-          key: ccache-
+          restore-keys: ccache-
 
       - name: Set ccache config (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.use_ccache
@@ -190,8 +189,7 @@ jobs:
             build_dir/host
             staging_dir/host
           #key: tools-${{ runner.arch }}-${{ hashFiles('tools/**/Makefile') }}-${{ github.run_id }}
-          #restore-keys: tools-${{ hashFiles('tools/**/Makefile') }}-
-          key: tools-${{ hashFiles('tools/**/Makefile') }}-
+          restore-keys: tools-${{ hashFiles('tools/**/Makefile') }}-
 
       - name: Refresh host tools timestamps (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
@@ -322,7 +320,7 @@ jobs:
           find bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} release/ \;
           mv -v .config release/full.config
           #cd release && 
-          find release -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \;
+          find release -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >release/sha256sums" \;
 
       - name: Save ccache to cache (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.use_ccache
