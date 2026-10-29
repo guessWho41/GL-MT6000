@@ -55,7 +55,6 @@ env:
   TARGET_REPOSITORY: "${{ github.repository }}"
   KEEP_RELEASES: 3
   KEEP_CACHES: 1
-  ZSTD_CLEVEL: 19
 
 jobs:
   check_commits:
