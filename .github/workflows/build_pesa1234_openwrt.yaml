@@ -55,6 +55,7 @@ env:
   TARGET_REPOSITORY: "${{ github.repository }}"
   KEEP_RELEASES: 3
   KEEP_CACHES: 1
+  ZSTD_CLEVEL: 19
 
 jobs:
   check_commits:
@@ -189,7 +190,7 @@ jobs:
             build_dir/host
             staging_dir/host
           key: tools-${{ runner.arch }}-${{ hashFiles('tools/**/Makefile') }}-${{ github.run_id }}
-          restore-keys: tools-${{ runner.arch }}-${{ hashFiles('tools/**/Makefile') }}-
+          restore-keys: tools-${{ hashFiles('tools/**/Makefile') }}-
 
       - name: Refresh host tools timestamps (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
