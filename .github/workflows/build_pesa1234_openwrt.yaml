@@ -183,14 +183,13 @@ jobs:
 
       - name: Cache host tools (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build_dir/host
             staging_dir/host
           key: tools-${{ runner.arch }}-${{ hashFiles('tools/**/Makefile') }}-${{ github.run_id }}
           restore-keys: tools-${{ runner.arch }}-${{ hashFiles('tools/**/Makefile') }}-
-          compression-level: 9
 
       - name: Refresh host tools timestamps (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
@@ -203,14 +202,13 @@ jobs:
 
       - name: Cache toolchain (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build_dir/toolchain-*
             staging_dir/toolchain-*
           key: toolchain-${{ runner.arch }}-${{ hashFiles('toolchain/**/Makefile') }}-${{ github.run_id }}
           restore-keys: toolchain-${{ hashFiles('toolchain/**/Makefile') }}-
-          compression-level: 9
 
       - name: Refresh toolchain timestamps (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
