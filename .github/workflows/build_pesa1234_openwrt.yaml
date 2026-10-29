@@ -318,8 +318,7 @@ jobs:
           fi
           find bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} release/ \;
           mv -v .config release/full.config
-          #cd release && 
-          find release -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >release/sha256sums" \;
+          (cd release && sha256sum openwrt-*-sysupgrade.bin > sha256sums)
 
       - name: Save ccache to cache (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.use_ccache
