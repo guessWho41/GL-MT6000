@@ -103,7 +103,7 @@ jobs:
   build:
     name: Build OpenWrt
     needs: check_commits
-    runs-on: ${{ inputs.runner_type == 'self-hosted' && 'self-hosted' || 'ubuntu-26.04-arm' }}
+    runs-on: ${{ inputs.runner_type == 'self-hosted' && 'self-hosted' || 'ubuntu-26.04' }}
     steps:
       - name: Install dependencies #and free disk space
         if: runner.environment == 'github-hosted'
@@ -127,9 +127,6 @@ jobs:
           #sudo docker image prune --all --force 2>/dev/null || true
 
           sudo apt-get update -y
-          #ubuntu-x64
-          #sudo apt-get install -y build-essential ccache clang gettext lvm mold
-          #ubuntu-arm
           sudo apt-get install -y ccache glibc-source mold
 
           #sudo apt-get remove -y \
@@ -212,7 +209,7 @@ jobs:
             build_dir/toolchain-*
             staging_dir/toolchain-*
           key: toolchain-${{ runner.arch }}-${{ hashFiles('toolchain/**/Makefile') }}-${{ github.run_id }}
-          restore-keys: toolchain-${{ runner.arch }}-${{ hashFiles('toolchain/**/Makefile') }}-
+          restore-keys: toolchain-${{ hashFiles('toolchain/**/Makefile') }}-
           compression-level: 9
 
       - name: Refresh toolchain timestamps (GitHub-hosted)
@@ -409,11 +406,11 @@ jobs:
         env:
           GH_REPO: ${{ env.TARGET_REPOSITORY }}
         run: |
-          for prefix in "ccache-" "tools-" "toolchain-"; do
+          for prefix in "ccache-" "tools-${{ runner.arch }}-" "toolchain-${{ runner.arch }}-"; do
             echo "=== Matching caches for '$prefix' (most-recently-used first) ==="
-            gh cache list --limit 100 --json id,key,lastAccessedAt --jq "map(select(.key | startswith(\"$prefix\"))) | sort_by(.lastAccessedAt) | reverse | .[] | \"\(.lastAccessedAt)  id=\(.id)  key=\(.key)\""
+            gh cache list --json id,key,lastAccessedAt --jq "map(select(.key | startswith(\"$prefix\"))) | sort_by(.lastAccessedAt) | reverse | .[] | \"\(.lastAccessedAt)  id=\(.id)  key=\(.key)\""
             echo "=== Deleting all but the newest ${{ env.KEEP_CACHES }} for '$prefix' ==="
-            gh cache list --limit 100 --json id,key,lastAccessedAt --jq "map(select(.key | startswith(\"$prefix\"))) | sort_by(.lastAccessedAt) | reverse | .[${{ env.KEEP_CACHES }}:] | .[].id" | while read id; do
+            gh cache list --json id,key,lastAccessedAt --jq "map(select(.key | startswith(\"$prefix\"))) | sort_by(.lastAccessedAt) | reverse | .[${{ env.KEEP_CACHES }}:] | .[].id" | while read id; do
               echo "deleting cache id=$id"
               gh cache delete "$id" || true
             done
