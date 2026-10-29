@@ -128,15 +128,9 @@ jobs:
 
           sudo apt-get update -y
           #ubuntu-x64
-          #sudo apt-get install -y \
-          #  build-essential ccache clang flex bison g++ gawk \
-          #  gettext libncurses5-dev \
-          #  libssl-dev llvm mold python3-setuptools rsync swig \
-          #  unzip zlib1g-dev file wget
+          #sudo apt-get install -y build-essential ccache clang gettext lvm mold
           #ubuntu-arm
-          sudo apt-get install -y \
-          bzip2 g++ gawk gcc git glibc-source libncurses-dev make \
-          ccache mold
+          sudo apt-get install -y ccache glibc-source mold
 
           #sudo apt-get remove -y \
           #  azure-cli firefox google-chrome-stable \
@@ -197,18 +191,9 @@ jobs:
           path: |
             build_dir/host
             staging_dir/host
-          key: tools-${{ hashFiles('tools/**/Makefile') }}-${{ github.run_id }}
-          restore-keys: tools-${{ hashFiles('tools/**/Makefile') }}-
-
-      - name: Cache toolchain (GitHub-hosted)
-        if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
-        uses: actions/cache@v5
-        with:
-          path: |
-            build_dir/toolchain-*
-            staging_dir/toolchain-*
-          key: toolchain-${{ hashFiles('toolchain/**/Makefile') }}-${{ github.run_id }}
-          restore-keys: toolchain-${{ hashFiles('toolchain/**/Makefile') }}-
+          key: tools-${{ runner.arch }}-${{ hashFiles('tools/**/Makefile') }}-${{ github.run_id }}
+          restore-keys: tools-${{ runner.arch }}-${{ hashFiles('tools/**/Makefile') }}-
+          compression-level: 9
 
       - name: Refresh host tools timestamps (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
@@ -218,6 +203,17 @@ jobs:
           else
             echo "No prebuilt host tools present; they will be compiled"
           fi
+
+      - name: Cache toolchain (GitHub-hosted)
+        if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
+        uses: actions/cache@v5
+        with:
+          path: |
+            build_dir/toolchain-*
+            staging_dir/toolchain-*
+          key: toolchain-${{ runner.arch }}-${{ hashFiles('toolchain/**/Makefile') }}-${{ github.run_id }}
+          restore-keys: toolchain-${{ runner.arch }}-${{ hashFiles('toolchain/**/Makefile') }}-
+          compression-level: 9
 
       - name: Refresh toolchain timestamps (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
