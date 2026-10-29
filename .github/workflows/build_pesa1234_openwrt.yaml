@@ -149,13 +149,14 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-      - name: Cache ccache (GitHub-hosted)
+      - name: Restore ccache from cache (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.use_ccache
-        uses: actions/cache@v6
+        uses: actions/cache/restore@v6
         with:
           path: ~/.cache/ccache
-          key: ccache-${{ github.run_id }}
-          restore-keys: ccache-
+          #key: ccache-${{ github.run_id }}
+          #restore-keys: ccache-
+          key: ccache-
 
       - name: Set ccache config (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.use_ccache
@@ -182,15 +183,16 @@ jobs:
         with:
           path: builder_repo
 
-      - name: Cache host tools (GitHub-hosted)
+      - name: Restore host tools from cache (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
-        uses: actions/cache@v6
+        uses: actions/cache/restore@v6
         with:
           path: |
             build_dir/host
             staging_dir/host
-          key: tools-${{ runner.arch }}-${{ hashFiles('tools/**/Makefile') }}-${{ github.run_id }}
-          restore-keys: tools-${{ hashFiles('tools/**/Makefile') }}-
+          #key: tools-${{ runner.arch }}-${{ hashFiles('tools/**/Makefile') }}-${{ github.run_id }}
+          #restore-keys: tools-${{ hashFiles('tools/**/Makefile') }}-
+          key: tools-${{ hashFiles('tools/**/Makefile') }}-
 
       - name: Refresh host tools timestamps (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
@@ -201,15 +203,16 @@ jobs:
             echo "No prebuilt host tools present; they will be compiled"
           fi
 
-      - name: Cache toolchain (GitHub-hosted)
+      - name: Restore toolchain from cache (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
-        uses: actions/cache@v6
+        uses: actions/cache/restore@v6
         with:
           path: |
             build_dir/toolchain-*
             staging_dir/toolchain-*
-          key: toolchain-${{ runner.arch }}-${{ hashFiles('toolchain/**/Makefile') }}-${{ github.run_id }}
-          restore-keys: toolchain-${{ hashFiles('toolchain/**/Makefile') }}-
+          #key: toolchain-${{ runner.arch }}-${{ hashFiles('toolchain/**/Makefile') }}-${{ github.run_id }}
+          #restore-keys: toolchain-${{ hashFiles('toolchain/**/Makefile') }}-
+          key: toolchain-${{ hashFiles('toolchain/**/Makefile') }}-
 
       - name: Refresh toolchain timestamps (GitHub-hosted)
         if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
@@ -322,6 +325,37 @@ jobs:
           #cd release && 
           find release -type f -iname 'openwrt-*-sysupgrade.bin' -exec sh -c "sha256sum {} >sha256sums" \;
 
+      - name: Save ccache to cache (GitHub-hosted)
+        if: runner.environment == 'github-hosted' && inputs.use_ccache
+        uses: actions/cache/save@v6
+        env:
+          ZSTD_CLEVEL: 19
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ github.run_id }}
+
+      - name: Save host tools to cache (GitHub-hosted)
+        if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
+        uses: actions/cache/save@v6
+        env:
+          ZSTD_CLEVEL: 19
+        with:
+          path: |
+            build_dir/host
+            staging_dir/host
+          key: tools-${{ runner.arch }}-${{ hashFiles('tools/**/Makefile') }}-${{ github.run_id }}
+
+      - name: Save toolchain to cache (GitHub-hosted)
+        if: runner.environment == 'github-hosted' && inputs.reuse_build_artifacts
+        uses: actions/cache/save@v6
+        env:
+          ZSTD_CLEVEL: 19
+        with:
+          path: |
+            build_dir/toolchain-*
+            staging_dir/toolchain-*
+          key: toolchain-${{ runner.arch }}-${{ hashFiles('toolchain/**/Makefile') }}-${{ github.run_id }}
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -407,9 +441,9 @@ jobs:
         run: |
           for prefix in "ccache-" "tools-${{ runner.arch }}-" "toolchain-${{ runner.arch }}-"; do
             echo "=== Matching caches for '$prefix' (most-recently-used first) ==="
-            gh cache list --json id,key,lastAccessedAt --jq "map(select(.key | startswith(\"$prefix\"))) | sort_by(.lastAccessedAt) | reverse | .[] | \"\(.lastAccessedAt)  id=\(.id)  key=\(.key)\""
+            gh cache list --limit 100 --json id,key,lastAccessedAt --jq "map(select(.key | startswith(\"$prefix\"))) | sort_by(.lastAccessedAt) | reverse | .[] | \"\(.lastAccessedAt)  id=\(.id)  key=\(.key)\""
             echo "=== Deleting all but the newest ${{ env.KEEP_CACHES }} for '$prefix' ==="
-            gh cache list --json id,key,lastAccessedAt --jq "map(select(.key | startswith(\"$prefix\"))) | sort_by(.lastAccessedAt) | reverse | .[${{ env.KEEP_CACHES }}:] | .[].id" | while read id; do
+            gh cache list --limit 100 --json id,key,lastAccessedAt --jq "map(select(.key | startswith(\"$prefix\"))) | sort_by(.lastAccessedAt) | reverse | .[${{ env.KEEP_CACHES }}:] | .[].id" | while read id; do
               echo "deleting cache id=$id"
               gh cache delete "$id" || true
             done
