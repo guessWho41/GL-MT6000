@@ -103,7 +103,7 @@ jobs:
   build:
     name: Build OpenWrt
     needs: check_commits
-    runs-on: ${{ inputs.runner_type == 'self-hosted' && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner_type == 'self-hosted' && 'self-hosted' || 'ubuntu-24.04-arm' }}
     steps:
       - name: Install dependencies #and free disk space
         if: runner.environment == 'github-hosted'
