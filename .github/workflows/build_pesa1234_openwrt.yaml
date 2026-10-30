@@ -358,22 +358,25 @@ jobs:
           REMOTE_BRANCH="${{ needs.check_commits.outputs.remote_branch }}"
           LATEST_COMMIT="${{ needs.check_commits.outputs.latest_commit_sha }}"
           cat > release_notes.md <<EOF
-          ### 🔄 Main Repository
-          - **Repository:** [${REMOTE_REPOSITORY}](https://github.com/${REMOTE_REPOSITORY})
           - **Branch:** ${REMOTE_BRANCH}
           - **Commit:** ${LATEST_COMMIT}
-
-          ### 📝 Build Information
-          - **Target:** [GL.iNet Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
-          - **Configuration:** [${{ inputs.config_file }}](https://github.com/$TARGET_REPOSITORY/blob/main/config/${{ inputs.config_file }})
           EOF
-          package_list=$(sed -n '/<!-- package-list-start -->/,/<!-- package-list-end -->/{ /<!--/d; p }' builder_repo/README.md)
-          if [ -z "$package_list" ]; then
-            echo "WARNING: package list section not found in README.md"
-            echo "- *package list not found in README.md*" >> release_notes.md
-          else
-            echo "$package_list" >> release_notes.md
-          fi
+          #### 🔄 Main Repository
+          #- **Repository:** [${REMOTE_REPOSITORY}](https://github.com/${REMOTE_REPOSITORY})
+          #- **Branch:** ${REMOTE_BRANCH}
+          #- **Commit:** ${LATEST_COMMIT}
+          #
+          #### 📝 Build Information
+          #- **Target:** [GL.iNet Flint 2 (GL-MT6000)](https://openwrt.org/toh/gl.inet/gl-mt6000)
+          #- **Configuration:** [${{ inputs.config_file }}](https://github.com/$TARGET_REPOSITORY/blob/main/config/${{ inputs.config_file }})
+          #EOF
+          #package_list=$(sed -n '/<!-- package-list-start -->/,/<!-- package-list-end -->/{ /<!--/d; p }' builder_repo/README.md)
+          #if [ -z "$package_list" ]; then
+          #  echo "WARNING: package list section not found in README.md"
+          #  echo "- *package list not found in README.md*" >> release_notes.md
+          #else
+          #  echo "$package_list" >> release_notes.md
+          #fi
           gh release create "$RELEASE_TAG" --repo "$TARGET_REPOSITORY" --latest --title "$RELEASE_TAG" --notes-file release_notes.md release/*
 
       - name: Clean up old builds
