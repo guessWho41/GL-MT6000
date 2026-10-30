@@ -9,9 +9,10 @@ on:
       runner_label:
         description: "Runner to probe"
         required: false
-        default: ubuntu-24.04-arm
+        default: ubuntu-26.04-arm
         type: choice
         options:
+          - ubuntu-26.04-arm
           - ubuntu-24.04-arm
           - ubuntu-22.04-arm
           - ubuntu-24.04
