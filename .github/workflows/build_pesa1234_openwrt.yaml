@@ -128,6 +128,9 @@ jobs:
 
           sudo apt-get update -y
           sudo apt-get install -y ccache glibc-source mold
+          if [ "${{ runner.arch }}" = "ARM64" ]; then
+            sudo apt-get install -y golang-go
+          fi
 
           #sudo apt-get remove -y \
           #  azure-cli firefox google-chrome-stable \
@@ -268,7 +271,7 @@ jobs:
       - name: Setup configuration and custom files
         run: |
           cp -fv "builder_repo/config/${{ inputs.config_file }}" .config
-          set_kconfig() {   # $1 = symbol, $2 = string value (omit for bool =y)
+          set_kconfig() {
             local sym="$1" val="${2-}"
             sed -i -e "/^${sym}=/d" -e "/^# ${sym} is not set\$/d" .config
             if [ -n "$val" ]; then
@@ -290,6 +293,12 @@ jobs:
           fi
           if [ "${{ inputs.testing_kernel }}" = "true" ]; then
             set_kconfig CONFIG_TESTING_KERNEL
+          fi
+          if [ "${{ runner.arch }}" = "ARM64" ]; then
+            set_kconfig CONFIG_GOLANG_EXTERNAL_BOOTSTRAP_ROOT "$(go env GOROOT)"
+            sed -i -e '/^CONFIG_GOLANG_BUILD_BOOTSTRAP=/d' \
+                   -e '/^# CONFIG_GOLANG_BUILD_BOOTSTRAP is not set$/d' .config
+            echo "# CONFIG_GOLANG_BUILD_BOOTSTRAP is not set" >> .config
           fi
           #rsync -a builder_repo/files ./
           ln -sfnv builder_repo/files files
