@@ -336,9 +336,9 @@ jobs:
           else
             mkdir -p ./release
           fi
-          find bin -type f \( -iname 'openwrt-*-sysupgrade.bin' -or -iname 'config.buildinfo' \) -exec cp -v {} release/ \;
+          find bin -type f -iname 'openwrt-*-sysupgrade.bin' -exec cp -v {} release/ \;
           mv -v .config release/full.config
-          (cd release && sha256sum openwrt-*-sysupgrade.bin > sha256sums)
+          (cd release && sha256sum openwrt-*-sysupgrade.bin full.config > sha256sums)
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
