@@ -234,6 +234,12 @@ jobs:
           scripts/feeds update -a
           rm -rfv feeds/packages/net/mwan3 feeds/luci/applications/luci-app-mwan3
 
+      - name: Checkout luci-app-dnsproxy
+        uses: actions/checkout@v7
+        with:
+          repository: muink/luci-app-dnsproxy
+          path: package/luci-app-dnsproxy
+
       - name: Checkout mwan3 nftables repository
         uses: actions/checkout@v7
         with:
