@@ -9,7 +9,7 @@ Repository for building [Pesa1234's](https://forum.openwrt.org/u/pesa1234) [GL.i
 - AdBlock-Fast
 - Bridger
 - Dynamic DNS Client
-- dnscrypt-proxy 2
+- dnsproxy with [luci-app-dnsproxy](https://github.com/muink/luci-app-dnsproxy) by [muink](https://github.com/muink)
 - mwan3 [nftables port](https://github.com/dl12345/mwan3) by [dl12345](https://forum.openwrt.org/u/dl12345)
 - qosify
 - TCP BBR
