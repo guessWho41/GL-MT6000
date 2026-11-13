@@ -15,7 +15,7 @@ Repository for building [Pesa1234's](https://forum.openwrt.org/u/pesa1234) [GL.i
 - TCP BBR
 - MiniUPnPd
 - usteer [next generation](https://github.com/NilsRo/usteer-ng) by [NilsRo](https://forum.openwrt.org/u/nilsro/)
-- Wireguard VPN with NPTv6
+- Wireguard
 - ZRAM
 - Removed: odhcpd and ppp
 <!-- package-list-end -->
