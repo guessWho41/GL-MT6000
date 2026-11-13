@@ -1,0 +1,11 @@
+--- a/feeds/packages/net/mwan3/files/etc/init.d/mwan3
++++ b/feeds/packages/net/mwan3/files/etc/init.d/mwan3
+@@ -3,7 +3,7 @@
+ . "${IPKG_INSTROOT}/lib/functions/network.sh"
+ . "${IPKG_INSTROOT}/lib/mwan3/mwan3.sh"
+ 
+-START=20
++START=21
+ USE_PROCD=1
+ SCRIPTNAME="mwan3-init"
+ 
