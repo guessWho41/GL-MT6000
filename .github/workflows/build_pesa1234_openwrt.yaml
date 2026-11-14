@@ -372,9 +372,9 @@ jobs:
           REMOTE_REPOSITORY="${{ env.REMOTE_REPOSITORY }}"
           REMOTE_BRANCH="${{ needs.check_commits.outputs.remote_branch }}"
           LATEST_COMMIT="${{ needs.check_commits.outputs.latest_commit_sha }}"
-          cat > release_notes.md <<EOF]
-          **Branch:** [${REMOTE_BRANCH}](https://github.com/${REMOTE_REPOSITORY}/openwrt/tree/${REMOTE_BRANCH})
-          **Commit:** [${LATEST_COMMIT}](https://github.com/${REMOTE_REPOSITORY}/openwrt/commit/${LATEST_COMMIT})
+          cat > release_notes.md <<EOF
+          **Branch:** [${REMOTE_BRANCH}](https://${REMOTE_REPOSITORY}/openwrt/tree/${REMOTE_BRANCH})
+          **Commit:** [${LATEST_COMMIT}](https://${REMOTE_REPOSITORY}/openwrt/commit/${LATEST_COMMIT})
           EOF
           #### 🔄 Main Repository
           #- **Repository:** [${REMOTE_REPOSITORY}](https://github.com/${REMOTE_REPOSITORY})
