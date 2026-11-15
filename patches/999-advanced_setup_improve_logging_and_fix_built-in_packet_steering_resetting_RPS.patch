@@ -1,25 +1,31 @@
 --- a/target/linux/mediatek/filogic/base-files/etc/init.d/advanced_setup
 +++ b/target/linux/mediatek/filogic/base-files/etc/init.d/advanced_setup
-@@ -5,9 +5,16 @@
- STARTUP_MARKER=/tmp/smp_affinity_started
+@@ -6,8 +6,23 @@
  DEFAULT_STARTUP_DELAY=30
  
--extra_command "runtime_atf" "Show runtime ATF/WATF state"
+ extra_command "runtime_atf" "Show runtime ATF/WATF state"
 -extra_command "run_deferred" "Run the deferred boot-time setup"
++extra_command "run_deferred" "Run the delayed boot-time setup"
+ 
 +log_msg() {
 +	local msg="$1"
-+	logger -t advanced_setup "$msg"
++	logger -t advanced_setup -p daemon.notice "$msg"
 +	if [ -t 1 ]; then
 +		printf '%s\n' "$msg"
 +	fi
 +}
- 
-+extra_command "runtime_atf" "Show runtime ATF/WATF state"
-+extra_command "run_deferred" "Run the delayed boot-time setup (used by procd)"
++
++log_err() {
++	local msg="$1"
++	logger -t advanced_setup -p daemon.err "$msg"
++	if [ -t 1 ]; then
++		printf '%s\n' "$msg" >&2
++	fi
++}
  
  smp_mt76() {
  OPTIMIZED_FOR="$1"
-@@ -31,7 +38,7 @@
+@@ -31,7 +46,7 @@
  	local radio_devices
  
  	# try to get all wifi and eth net interface.
@@ -28,7 +34,7 @@
  	NET_IF_LIST=`ls /sys/class/net`
  	for vif in $NET_IF_LIST;
  	do
-@@ -41,12 +48,12 @@
+@@ -41,12 +56,12 @@
  			RPS_IF_LIST="$RPS_IF_LIST $vif"
  		fi
  	done;
@@ -43,7 +49,7 @@
  	radio_devices=""
  	for phy_path in /sys/class/ieee80211/*; do
  		[ -e "$phy_path" ] || continue
-@@ -64,7 +71,7 @@
+@@ -64,7 +79,7 @@
  		radio_devices="$radio_devices $radio_device"
  
  		NUM_WIFI_CARD=`expr $NUM_WIFI_CARD + 1`
@@ -52,7 +58,7 @@
  		case "$radio_device" in
  			*/pci0000:*) WIFI_RADIO2=1 ;;
  			*/pci0001:*) WIFI_RADIO3=1 ;;
-@@ -72,22 +79,21 @@
+@@ -72,22 +87,21 @@
  		esac
  	done
  
@@ -81,7 +87,7 @@
  }
  
  # $1: CPU#
-@@ -104,7 +110,7 @@
+@@ -104,7 +118,7 @@
  {
  	eval oval=\$CPU${1}_RPS
  	eval CPU${1}_RPS=\"\$CPU${1}_RPS $2\"
@@ -90,7 +96,7 @@
  }
  
  MT7988()
-@@ -125,7 +131,7 @@
+@@ -125,7 +139,7 @@
  	wifi2_irq_pcie1=
  
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
@@ -99,7 +105,7 @@
  		#TCP Binding
  		iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  		iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -141,9 +147,6 @@
+@@ -141,9 +155,6 @@
  		iptables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  		ip6tables -D FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  		ip6tables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
@@ -109,7 +115,7 @@
  	fi
  
  	for vif in $NET_IF_LIST;
-@@ -152,7 +155,7 @@
+@@ -152,7 +163,7 @@
  			WIFI_IF_LIST="$WIFI_IF_LIST $vif"
  		fi
  	done;
@@ -118,7 +124,7 @@
  	# Please update the CPU binding in each cases.
  	# CPU#_AFFINITY="add binding irq number here"
  	# CPU#_RPS="add binding interface name here"
-@@ -178,10 +181,10 @@
+@@ -178,10 +189,10 @@
  		CPU2_RPS=""
  		CPU3_RPS=""
  	fi
@@ -133,7 +139,7 @@
  }
  
  MT7986()
-@@ -201,7 +204,7 @@
+@@ -201,7 +212,7 @@
  	wifi3_irq=
  
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
@@ -142,7 +148,7 @@
  		#TCP Binding
  		iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  		iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -231,7 +234,7 @@
+@@ -231,7 +242,7 @@
  		#	wifi3_irq=239
  		#fi
  	else
@@ -151,7 +157,7 @@
  		#AX6000 AX7800 - SOC
  		if [[ "$WIFI_RADIO1" -eq "1" ]]; then
  			wifi1_irq=245
-@@ -252,7 +255,7 @@
+@@ -252,7 +263,7 @@
  			WIFI_IF_LIST="$WIFI_IF_LIST $vif"
  		fi
  	done;
@@ -160,7 +166,7 @@
  	# Please update the CPU binding in each cases.
  	# CPU#_AFFINITY="add binding irq number here"
  	# CPU#_RPS="add binding interface name here"
-@@ -278,10 +281,10 @@
+@@ -278,10 +289,10 @@
  		CPU2_RPS="$WIFI_IF_LIST"
  		CPU3_RPS="$WIFI_IF_LIST"
  	fi
@@ -175,7 +181,7 @@
  }
  
  gl_mt6000()
-@@ -299,7 +302,7 @@
+@@ -299,7 +310,7 @@
  	wifi1_irq=
  	wifi2_irq=
  	wifi3_irq=
@@ -184,7 +190,7 @@
  	if [[ "$WIFI_RADIO1" -eq "1" ]]; then
  		if [[ "$WED_ENABLE" -eq "1" ]]; then
  			wifi1_irq=237
-@@ -314,7 +317,7 @@
+@@ -314,7 +325,7 @@
  			WIFI_IF_LIST="$WIFI_IF_LIST $vif"
  		fi
  	done;
@@ -193,7 +199,7 @@
  	WAN_IF_LIST=""
  
  	for iface in $(uci show network | grep "=interface" | cut -d '.' -f 2 | cut -d '=' -f1 | sort -u); do
-@@ -370,9 +373,9 @@
+@@ -370,9 +381,9 @@
  
  	BRIDGE_MEMBERS=$(echo $BRIDGE_MEMBERS | tr ' ' '\n' | sort -u | tr '\n' ' ')
  	
@@ -206,16 +212,7 @@
  	
  	# Please update the CPU binding in each cases.
  	# CPU#_AFFINITY="add binding irq number here"
-@@ -387,7 +390,7 @@
- 	rps_type=$(uci get advanced.@advanced_packet_steering[0].advanced_packet_steering_enable 2>/dev/null)
- 	rps_type="${rps_type:-0}"
- 
--	if [ "$rps_type" = "1" ]; then
-+	if [ -z "$rps_type" ] || [ "$rps_type" = "1" ]; then
- 		CPU0_RPS="$WIFI_IF_LIST"
- 		CPU1_RPS="$WIFI_IF_LIST"
- 		CPU2_RPS="$WIFI_IF_LIST"
-@@ -398,7 +401,6 @@
+@@ -398,7 +409,6 @@
  		CPU2_RPS="$WAN_IF_LIST $WIFI_IF_LIST"
  		CPU3_RPS="$WAN_IF_LIST $WIFI_IF_LIST"
  	fi
@@ -223,7 +220,7 @@
  }
  
  MT7981()
-@@ -415,7 +417,7 @@
+@@ -415,7 +425,7 @@
  
  	#AX3000
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
@@ -232,7 +229,7 @@
  		#TCP Binding
  		iptables -D FORWARD -p tcp -m conntrack --ctstate	\
  				RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -462,8 +464,8 @@
+@@ -462,8 +472,8 @@
  		CPU0_RPS="$RPS_IF_LIST"
  		CPU1_RPS="$RPS_IF_LIST"
  	fi
@@ -243,7 +240,7 @@
  }
  
  gl_mt3000()
-@@ -480,7 +482,7 @@
+@@ -480,7 +490,7 @@
  
  	#AX3000
  	if [[ "$WED_ENABLE" -eq "1" ]]; then
@@ -252,7 +249,7 @@
  		if [[ "$WIFI_RADIO1" -eq "1" ]]; then
  			wifi1_irq=237
  		fi
-@@ -507,8 +509,8 @@
+@@ -507,8 +517,8 @@
  		CPU0_RPS="$RPS_IF_LIST"
  		CPU1_RPS="$RPS_IF_LIST"
  	fi
@@ -263,7 +260,7 @@
  }
  
  MT7622()
-@@ -553,36 +555,36 @@
+@@ -553,36 +563,36 @@
  		CPU1_RPS="$RPS_IF_LIST"
  	fi
  
@@ -312,7 +309,7 @@
  		MT7988 $num_of_wifi
  	fi
  }
-@@ -603,25 +605,26 @@
+@@ -603,25 +613,26 @@
  
  set_rps_cpu_bitmap()
  {
@@ -343,7 +340,7 @@
  		done
  		num=`expr $num + 1`
  	done
-@@ -630,7 +633,7 @@
+@@ -630,7 +641,7 @@
  # $1: The default rps value. If rps of the interface is not setup, set $1 to it
  set_rps_cpus()
  {
@@ -352,7 +349,7 @@
  	for i in $RPS_IF_LIST; do
  		var=${VAR_PREFIX}_${i//'-'/_}
  		var=${var//'.'/_}
-@@ -645,7 +648,7 @@
+@@ -645,7 +656,7 @@
  			if [ -n "$cpu_map" ]; then
  				for rxq in /sys/class/net/$i/queues/rx-*; do
  					[ -d "$rxq" ] || continue
@@ -361,7 +358,7 @@
  					echo $cpu_map > "$rxq/rps_cpus"
  				done
  			fi
-@@ -655,7 +658,7 @@
+@@ -655,7 +666,7 @@
  
  set_smp_affinity()
  {
@@ -370,7 +367,7 @@
  	num=0
  	while [ "$num" -lt "$NUM_OF_CPU" ];do
  		eval smp_list=\$CPU${num}_AFFINITY
-@@ -663,22 +666,22 @@
+@@ -663,22 +674,21 @@
  			cpu_bit=$((2 ** $num))
  			virq=$(get_virtual_irq $i)
  			if [ -z "$virq" ]; then
@@ -383,8 +380,7 @@
 +			log_msg "[smp_affinity] Hardware IRQ $i maps to virtual IRQ $virq"
  			if ! echo "$cpu_bit" > "/proc/irq/$virq/smp_affinity"; then
 -				logger -t advanced_setup "smp_affinity: failed to set IRQ $virq affinity to CPU$num"
-+				log_msg "[smp_affinity] Failed to set affinity of virtual IRQ $virq to CPU$num"
-+				continue
++				log_err "[smp_affinity] Failed to set affinity of virtual IRQ $virq to CPU$num"
  			fi
  		done
  		num=`expr $num + 1`
@@ -399,7 +395,7 @@
  VAR_PREFIX="autogen"
  get_if_info
  setup_model
-@@ -693,14 +696,13 @@
+@@ -693,14 +703,13 @@
  		set_rps_cpu_bitmap
  		set_rps_cpus $DEFAULT_RPS
  	else
@@ -416,7 +412,7 @@
  set_smp_affinity
  #end of file
  }
-@@ -709,7 +711,7 @@
+@@ -709,7 +718,7 @@
  {
  	mtk_offloading_enable=$(uci get advanced.@defaults[0].mtk_offloading_enable 2>/dev/null || echo "x")
  	if [ "$mtk_offloading_enable" == "1" ]; then
@@ -425,7 +421,7 @@
  			#TCP Binding
  			iptables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  			ip6tables -I FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -720,7 +722,7 @@
+@@ -720,7 +729,7 @@
  			iptables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  			ip6tables -I FORWARD -m pkttype --pkt-type multicast -j ACCEPT
  	elif [ "$mtk_offloading_enable" == 0 ]; then
@@ -434,25 +430,25 @@
  			#TCP Binding
  			iptables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
  			ip6tables -D FORWARD -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD --hw
-@@ -815,7 +817,7 @@
+@@ -815,7 +824,7 @@
  
  		if [ "$old_content" != "$new_line" ]; then
  			printf '%s\n' "$new_line" > "$MODULE_FILE"
 -			logger -t advanced_setup "updated $MODULE_FILE to '$new_line'; reboot required for WED mode change"
-+			log_msg "[WED] $MODULE_FILE updated with '$new_line', reboot required"
++			log_msg "[WED] $MODULE_FILE updated with '$new_line', reboot required for the WED mode change"
  			echo "0"
  			return 0
  		fi
-@@ -825,7 +827,7 @@
+@@ -825,7 +834,7 @@
  		runtime_wed=$(cat /sys/module/mt7915e/parameters/wed_enable 2>/dev/null)
  		if { [ "$wed" = "1" ] && [ "$runtime_wed" != "Y" ]; } || \
  		   { [ "$wed" = "0" ] && [ "$runtime_wed" != "N" ]; }; then
 -			logger -t advanced_setup "mt7915e runtime WED state '$runtime_wed' differs from UCI '$wed'; reboot required"
-+			log_msg "[WED] Runtime state '$runtime_wed' differs from configured value '$wed', reboot required"
++			log_msg "[WED] Runtime state is '$runtime_wed' but UCI is set to '$wed', reboot required"
  			echo "0"
  			return 0
  		fi
-@@ -869,7 +871,7 @@
+@@ -869,7 +878,7 @@
  
  		if [ "$old_content" != "$new_line" ]; then
  			printf '%s\n' "$new_line" > "$MODULE_FILE"
@@ -461,7 +457,24 @@
  		fi
  	fi
  
-@@ -910,7 +912,7 @@
+@@ -923,7 +932,7 @@
+ 
+ 		if [ "$old_content" != "$new_line" ]; then
+ 			printf '%s\n' "$new_line" > "$MODULE_FILE"
+-			logger -t advanced_setup "updated $MODULE_FILE to '$new_line'; reboot required for the deferred airtime report change"
++			log_msg "[HW-ATF] $MODULE_FILE updated with '$new_line', reboot required for the deferred_airtime_report change"
+ 		fi
+ 	fi
+ }
+@@ -935,7 +944,6 @@
+ 
+ 	wed_changed=$(sync_mt7915e_wed_module_options)
+ 	atf_changed=$(sync_mt7915e_airtime_module_options)
+-	sync_mt7915e_deferred_airtime_module_options
+ 
+ 	if [ "$wed_changed" = "1" ] || [ "$atf_changed" = "1" ]; then
+ 		echo "1"
+@@ -963,7 +971,7 @@
  	for FILE in /sys/kernel/debug/ieee80211/*/mt76/vow_atf; do
  		[ -e "$FILE" ] || continue
  		found=1
@@ -470,7 +483,7 @@
  		printf '%s\n' "$atf" > "$FILE"
  	done
  
-@@ -965,11 +967,10 @@
+@@ -1022,11 +1030,10 @@
  		if [ $mtkutil_enable == 1 ]; then
  			if [ $hqos_enable == 1 ]; then
  				/sbin/mtkhnat
@@ -483,12 +496,12 @@
  }
  
  cake_mq_setup()
-@@ -987,48 +988,49 @@
+@@ -1044,48 +1051,49 @@
  
  	case "$value" in
  		''|*[!0-9]*)
 -			logger -t advanced_setup "invalid cake_mq sync_time value '$value'"
-+			log_msg "[CAKE_MQ] Invalid sync_time value '$value'"
++			log_err "[CAKE_MQ] Invalid sync_time value '$value'"
  			return 1
  			;;
  	esac
@@ -545,36 +558,34 @@
  }
  
  service_triggers() {
-@@ -1049,7 +1051,7 @@
+@@ -1106,7 +1114,7 @@
  	sync_mt7915e_module_options >/dev/null
- 	advanced_runtime_setup
+ 	advanced_runtime_setup "$1"
  	echo 1 > "$STARTUP_MARKER"
 -	logger -t advanced_setup "advanced_setup finished"
 +	log_msg "Finished"
  }
  
- run_deferred() {
-@@ -1060,7 +1062,7 @@
+ # These settings do not depend on the network interfaces, so they do not have
+@@ -1125,7 +1133,7 @@
  	esac
  
  	[ "$delay" -eq 0 ] || sleep "$delay"
 -	logger -t advanced_setup "smp_affinity: deferred setup starting"
 +	log_msg "Starting"
- 	run_advanced_setup
+ 	run_advanced_setup "$2"
  }
  
-@@ -1068,7 +1070,9 @@
- 	local delay=0
- 
- 	[ -f "$STARTUP_MARKER" ] || delay=$(get_startup_delay)
+@@ -1139,7 +1147,7 @@
+ 		advanced_early_setup 2>/dev/null
+ 		early="early_done"
+ 	fi
 -	logger -t advanced_setup "smp_affinity: setup scheduled after $delay sec (non-blocking)"
-+	if [ "$delay" -ne 0 ]; then
-+		log_msg "Setup is scheduled to run in $delay seconds (non-blocking)"
-+	fi
++	log_msg "Setup is scheduled to run in $delay seconds (non-blocking)"
  
  	procd_open_instance deferred_setup
- 	procd_set_param command "$initscript" run_deferred "$delay"
-@@ -1076,36 +1080,36 @@
+ 	procd_set_param command "$initscript" run_deferred "$delay" $early
+@@ -1147,37 +1155,36 @@
  }
  
  reload_service() {
@@ -587,6 +598,7 @@
 +		atf)
 +			log_msg "Reloading HW-ATF settings"
  			sync_mt7915e_airtime_module_options >/dev/null
+-			sync_mt7915e_deferred_airtime_module_options
  			hw_atf_setup
 -	            ;;
 -        usb)
