@@ -276,6 +276,8 @@ jobs:
 
       - name: Setup configuration and custom files
         run: |
+          RELEASE_TAG="$(date +%F)_$(./scripts/getver.sh)_${{ needs.check_commits.outputs.remote_branch }}"
+          echo "RELEASE_TAG=${RELEASE_TAG}" >> "$GITHUB_ENV"
           cp -fv "builder_repo/config/${{ inputs.config_file }}" .config
           set_kconfig() {
             local sym="$1" val="${2-}"
@@ -345,16 +347,6 @@ jobs:
         with:
           name: gl-mt6000-firmware
           path: release/*
-
-      - name: Get release info
-        run: |
-          version=$(find bin -type f -iname 'version.buildinfo' -print -quit | xargs -r cat | tr -d '\n')
-          if [ -z "$version" ]; then
-            echo "*** version.buildinfo not found ***"
-            exit 1
-          fi
-          RELEASE_TAG="$(date +%F)_${version}_${{ needs.check_commits.outputs.remote_branch }}"
-          echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
 
       - name: Commit build artifacts
         run: |
